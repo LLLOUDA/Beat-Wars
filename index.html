@@ -565,13 +565,13 @@ function setFeedTab(tab,el){
 async function loadFeed(){
   const feed = document.getElementById('beat-feed');
   feed.innerHTML='<div class="loading">LOADING BEATS...</div>';
-  let query = sb.from('beats').select(`*, profiles(username,rank,avatar_url)`).order('created_at',{ascending:false});
+  let query = sb.from('beats').select('*').order('created_at',{ascending:false});
   if(feedTab==='casual') query=query.eq('battle_mode','casual');
   if(feedTab==='ranked') query=query.eq('battle_mode','ranked');
   if(feedTab==='mine'&&currentUser) query=query.eq('user_id',currentUser.id);
   const {data:beats,error} = await query;
   if(error||!beats||!beats.length){feed.innerHTML='<div class="empty">NO BEATS HERE YET</div>';return;}
-  feed.innerHTML = beats.map(b=>feedCardHTML(b,b.profiles)).join('');
+  feed.innerHTML = beats.map(b=>feedCardHTML(b,null)).join('');
   attachCardListeners();
 }
 
