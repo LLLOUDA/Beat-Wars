@@ -1,4 +1,4 @@
-  <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -238,8 +238,12 @@ body{background:var(--dark);font-family:var(--px);color:#fff;min-height:100vh;ov
       <button class="auth-tab" onclick="switchAuthTab('signup')">SIGN UP</button>
     </div>
     <div id="login-form">
-      <div class="field"><label>EMAIL</label><input type="email" id="login-email" placeholder="your@email.com"></div>
+      <div class="field"><label>USERNAME OR EMAIL</label><input type="text" id="login-email" placeholder="username or email"></div>
       <div class="field"><label>PASSWORD</label><input type="password" id="login-pass" placeholder="••••••••"></div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+        <input type="checkbox" id="remember-me" style="width:16px;height:16px;cursor:pointer;accent-color:var(--y);">
+        <label for="remember-me" style="font-family:var(--vt);font-size:16px;color:rgba(255,255,255,.5);cursor:pointer;letter-spacing:1px;">KEEP ME LOGGED IN</label>
+      </div>
       <button class="auth-submit" onclick="login()">LOGIN TO THE GALAXY</button>
     </div>
     <div id="signup-form" style="display:none;">
@@ -361,10 +365,31 @@ function switchAuthTab(tab){
 }
 
 async function login(){
-  const email=document.getElementById('login-email').value.trim();
+  let identifier=document.getElementById('login-email').value.trim();
   const pass=document.getElementById('login-pass').value;
+  const remember=document.getElementById('remember-me').checked;
   const msg=document.getElementById('auth-msg');
   msg.className='auth-msg';msg.textContent='LOGGING IN...';
+  // if not an email, look up email from username
+  let email=identifier;
+  if(!identifier.includes('@')){
+    const {data:prof,error:profErr}=await sb.from('profiles').select('id').eq('username',identifier).maybeSingle();
+    if(profErr||!prof){msg.className='auth-msg error';msg.textContent='USERNAME NOT FOUND';return;}
+    // get email from auth.users via our own lookup
+    const {data:userList}=await sb.from('profiles').select('id').eq('username',identifier).single();
+    // look up email stored in profiles
+    const {data:emailProf}=await sb.from('profiles').select('email').eq('username',identifier).maybeSingle();
+    if(!emailProf?.email){msg.className='auth-msg error';msg.textContent='CANNOT FIND ACCOUNT — TRY YOUR EMAIL';return;}
+    email=emailProf.email;
+  }
+  // set session persistence
+  if(remember){
+    await sb.auth.setSession && sb.auth.updateUser;
+    // Supabase persists by default — just set a longer storage
+    localStorage.setItem('bw_remember','1');
+  } else {
+    localStorage.removeItem('bw_remember');
+  }
   const {data,error}=await sb.auth.signInWithPassword({email,password:pass});
   if(error){msg.className='auth-msg error';msg.textContent=error.message;return;}
   currentUser=data.user;await loadProfile();showScreen('home');
@@ -380,7 +405,7 @@ async function signup(){
   const {data,error}=await sb.auth.signUp({email,password:pass});
   if(error){msg.className='auth-msg error';msg.textContent=error.message;return;}
   currentUser=data.user;
-  await sb.from('profiles').insert({id:currentUser.id,username,rank:'padawan',rank_points:0,wins:0,losses:0,votes_cast:0});
+  await sb.from('profiles').insert({id:currentUser.id,username,email,rank:'padawan',rank_points:0,wins:0,losses:0,votes_cast:0});
   await loadProfile();
   msg.className='auth-msg success';msg.textContent='WELCOME TO BEAT WARS!';
   setTimeout(()=>showScreen('home'),1200);
