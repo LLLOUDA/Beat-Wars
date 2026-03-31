@@ -437,6 +437,17 @@ select option{background:#0a0020;color:#fff;}
         <label for="remember-me" style="font-family:var(--vt);font-size:16px;color:rgba(255,255,255,.5);cursor:pointer;letter-spacing:1px;">KEEP ME LOGGED IN</label>
       </div>
       <button class="auth-submit" onclick="login()">LOGIN TO THE GALAXY</button>
+      <div style="text-align:center;margin-top:12px;">
+        <button onclick="showForgotPassword()" style="background:none;border:none;font-family:var(--vt);font-size:16px;color:rgba(255,255,255,.3);cursor:pointer;letter-spacing:1px;transition:color .2s;" onmouseover="this.style.color='rgba(255,232,26,.6)'" onmouseout="this.style.color='rgba(255,255,255,.3)'">FORGOT PASSWORD?</button>
+      </div>
+    </div>
+    <div id="forgot-form" style="display:none;">
+      <div style="font-family:var(--vt);font-size:16px;color:rgba(255,255,255,.45);margin-bottom:16px;letter-spacing:1px;line-height:1.6;">ENTER YOUR EMAIL AND WE'LL SEND YOU A RESET LINK.</div>
+      <div class="field"><label>EMAIL</label><input type="email" id="forgot-email" placeholder="your@email.com"></div>
+      <button class="auth-submit" onclick="sendReset()">SEND RESET LINK</button>
+      <div style="text-align:center;margin-top:12px;">
+        <button onclick="showForgotPassword()" style="background:none;border:none;font-family:var(--vt);font-size:16px;color:rgba(255,255,255,.3);cursor:pointer;letter-spacing:1px;" onmouseover="this.style.color='rgba(255,232,26,.6)'" onmouseout="this.style.color='rgba(255,255,255,.3)'">← BACK TO LOGIN</button>
+      </div>
     </div>
     <div id="signup-form" style="display:none;">
       <div class="field"><label>USERNAME</label><input type="text" id="signup-username" placeholder="ProducerName" maxlength="20"></div>
@@ -701,7 +712,29 @@ function switchAuthTab(tab){
   document.querySelectorAll('.auth-tab').forEach((t,i)=>t.classList.toggle('active',(tab==='login'&&i===0)||(tab==='signup'&&i===1)));
   document.getElementById('login-form').style.display=tab==='login'?'':'none';
   document.getElementById('signup-form').style.display=tab==='signup'?'':'none';
+  document.getElementById('forgot-form').style.display='none';
   document.getElementById('auth-msg').textContent='';
+}
+
+let forgotVisible=false;
+function showForgotPassword(){
+  forgotVisible=!forgotVisible;
+  document.getElementById('forgot-form').style.display=forgotVisible?'':'none';
+  document.getElementById('login-form').style.display=forgotVisible?'none':'';
+  document.getElementById('auth-msg').textContent='';
+}
+
+async function sendReset(){
+  const email=document.getElementById('forgot-email').value.trim();
+  const msg=document.getElementById('auth-msg');
+  if(!email){msg.className='auth-msg error';msg.textContent='ENTER YOUR EMAIL';return;}
+  msg.className='auth-msg';msg.textContent='SENDING...';
+  const {error}=await sb.auth.resetPasswordForEmail(email,{
+    redirectTo:'https://beat-wars.netlify.app'
+  });
+  if(error){msg.className='auth-msg error';msg.textContent=error.message;return;}
+  msg.className='auth-msg success';msg.textContent='CHECK YOUR EMAIL FOR A RESET LINK!';
+  setTimeout(()=>showForgotPassword(),3000);
 }
 
 async function login(){
