@@ -16,6 +16,55 @@
 body{background:var(--dark);font-family:var(--px);color:#fff;min-height:100vh;overflow-x:hidden;}
 select{color-scheme:dark;}
 select option{background:#0a0020!important;color:#fff!important;}
+
+/* ── CRAWL INTRO ── */
+#crawl{position:fixed;inset:0;z-index:9000;background:#000;overflow:hidden;
+  background-image:
+    radial-gradient(1px 1px at 8% 12%,#fff,transparent),
+    radial-gradient(1px 1px at 20% 38%,rgba(255,255,255,.7),transparent),
+    radial-gradient(1.5px 1.5px at 33% 7%,#fff,transparent),
+    radial-gradient(1px 1px at 47% 53%,rgba(255,255,255,.8),transparent),
+    radial-gradient(1px 1px at 61% 24%,#fff,transparent),
+    radial-gradient(1px 1px at 74% 68%,rgba(255,255,255,.6),transparent),
+    radial-gradient(1.5px 1.5px at 86% 11%,#fff,transparent),
+    radial-gradient(1px 1px at 93% 44%,rgba(255,255,255,.7),transparent),
+    radial-gradient(1px 1px at 4% 79%,#fff,transparent),
+    radial-gradient(1px 1px at 16% 61%,rgba(255,255,255,.5),transparent),
+    radial-gradient(1px 1px at 29% 89%,#fff,transparent),
+    radial-gradient(1.5px 1.5px at 54% 76%,rgba(255,255,255,.8),transparent),
+    radial-gradient(1px 1px at 67% 49%,#fff,transparent),
+    radial-gradient(1px 1px at 81% 87%,rgba(255,255,255,.6),transparent),
+    radial-gradient(1px 1px at 41% 32%,rgba(255,255,255,.5),transparent),
+    radial-gradient(1px 1px at 13% 4%,#fff,transparent),
+    radial-gradient(1px 1px at 76% 94%,rgba(255,255,255,.7),transparent),
+    radial-gradient(1.5px 1.5px at 24% 71%,#fff,transparent),
+    radial-gradient(1px 1px at 89% 58%,rgba(255,255,255,.5),transparent),
+    radial-gradient(1px 1px at 96% 22%,#fff,transparent);
+  background-color:#000;
+  cursor:pointer;
+  transition:opacity .6s;
+}
+#crawl.fade{opacity:0;pointer-events:none;}
+#crawl-viewport{
+  position:absolute;inset:0;overflow:hidden;
+  -webkit-mask-image:linear-gradient(to bottom,transparent 0%,black 15%,black 85%,transparent 100%);
+  mask-image:linear-gradient(to bottom,transparent 0%,black 15%,black 85%,transparent 100%);
+  pointer-events:none;
+}
+#crawl-box{
+  position:absolute;left:50%;transform:translateX(-50%);
+  width:min(580px,88vw);padding:20px 30px 60px;
+  animation:crawlUp 26s linear forwards;
+  pointer-events:none;
+}
+@keyframes crawlUp{
+  0%{top:100vh;}
+  100%{top:-120%;}
+}
+#crawl-logo{font-family:'Press Start 2P',monospace;font-size:clamp(13px,3vw,26px);color:#FFE81A;text-align:center;text-shadow:0 0 20px #FFE81A;margin-bottom:28px;line-height:1.9;}
+#crawl-text{font-family:'VT323',monospace;font-size:clamp(20px,3vw,27px);color:#FFE81A;text-align:center;line-height:2.1;opacity:.9;}
+#crawl-hint{position:absolute;bottom:28px;left:50%;transform:translateX(-50%);font-family:'Press Start 2P',monospace;font-size:8px;color:rgba(255,255,255,.35);white-space:nowrap;animation:hintPulse 2s ease-in-out infinite;pointer-events:none;}
+@keyframes hintPulse{0%,100%{opacity:.25;}50%{opacity:.7;}}
 #stars{position:fixed;inset:0;z-index:0;pointer-events:none;}
 .screen{display:none;position:relative;z-index:10;min-height:100vh;}
 .screen.active{display:flex;flex-direction:column;align-items:center;}
@@ -276,6 +325,23 @@ select option{background:#0a0020;color:#fff;}
 </style>
 </head>
 <body>
+
+<!-- CRAWL INTRO -->
+<div id="crawl">
+  <div id="crawl-viewport">
+    <div id="crawl-box">
+      <div id="crawl-logo">⚔️ BEAT WARS ⚔️<br><span style="font-size:.4em;color:#aaa;letter-spacing:.2em;">EPISODE I — THE PHANTOM BASS</span></div>
+      <div id="crawl-text">
+        A long time ago in a bedroom<br>far, far away...<br><br>
+        A PRODUCER discovered<br>the power of the Force.<br><br>
+        Armed with nothing but a DAW<br>and raw talent, they forged beats<br>that shook the galaxy.<br><br>
+        These are those beats.<br><br>
+        May the bass be with you.
+      </div>
+    </div>
+  </div>
+  <div id="crawl-hint">TAP ANYWHERE TO SKIP</div>
+</div>
 
 <canvas id="stars"></canvas>
 <div id="toast"></div>
@@ -605,6 +671,23 @@ let voteTarget=null, voteRatings={energy:0,originality:0,production:0,would_use:
 // ══════════════════════════════════════════
 // INIT
 // ══════════════════════════════════════════
+// ── CRAWL ──
+(function(){
+  const crawl = document.getElementById('crawl');
+  if(!crawl) return;
+  function dismiss(){
+    if(crawl._gone) return;
+    crawl._gone = true;
+    crawl.classList.add('fade');
+    setTimeout(()=>{ if(crawl.parentNode) crawl.parentNode.removeChild(crawl); }, 700);
+  }
+  // click or tap anywhere dismisses
+  crawl.addEventListener('click', dismiss);
+  crawl.addEventListener('touchend', function(e){ e.preventDefault(); dismiss(); }, {passive:false});
+  // auto dismiss after animation ends
+  setTimeout(dismiss, 27000);
+})();
+
 async function init(){
   const {data:{session}}=await sb.auth.getSession();
   if(session){currentUser=session.user;await loadProfile();showScreen('home');}
