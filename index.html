@@ -454,6 +454,19 @@ select option{background:#0a0020;color:#fff;}
   </div>
 </div>
 
+<!-- PRODUCER PROFILE SCREEN -->
+<div id="producer-screen" class="screen">
+  <div style="width:100%;max-width:700px;padding:0 4px;margin-top:16px;display:flex;gap:8px;">
+    <button class="nav-btn" onclick="history.back();showScreen(prevScreen||'home')">← BACK</button>
+    <button class="nav-btn primary" id="challenge-prod-btn" style="display:none;" onclick="challengeFromProfile()">⚔️ CHALLENGE</button>
+  </div>
+  <div class="profile-header" id="producer-header" style="margin-top:12px;"><div class="loading">LOADING...</div></div>
+  <div style="width:100%;max-width:700px;margin-top:20px;">
+    <div class="section-title">BEATS</div>
+    <div id="producer-beats-list"><div class="loading">LOADING...</div></div>
+  </div>
+</div>
+
 <script>
 // ══════════════════════════════════════════
 // CONFIG — REPLACE WITH YOUR VALUES
@@ -686,9 +699,9 @@ function feedCardHTML(b,prof){
       <div class="fc-cover">${coverHtml}</div>
       <div class="fc-info">
         <div class="fc-title">${esc(b.title||'Untitled')}</div>
-        <div class="fc-producer">
+        <div class="fc-producer" onclick="viewProducer('${b.user_id}')" style="cursor:pointer;" title="View ${esc(username)}'s profile">
           <div class="fc-avatar">${avatarHtml}</div>
-          <span class="fc-username">${esc(username)}</span>
+          <span class="fc-username" style="text-decoration:underline;text-decoration-color:rgba(255,255,255,.2);">${esc(username)}</span>
           <span class="rank-badge rank-${rank}" style="font-size:5px;padding:2px 5px;">${rank.toUpperCase()}</span>
         </div>
         <div class="fc-tags">
@@ -870,7 +883,7 @@ async function loadLeaderboard(){
   list.innerHTML=data.map((p,i)=>{
     const avatarHtml=p.avatar_url?`<img src="${esc(p.avatar_url)}">`:'👤';
     return `
-    <div class="lb-row">
+    <div class="lb-row" onclick="viewProducer('${p.id}')">
       <div class="lb-rank-num ${i===0?'gold':i===1?'silver':i===2?'bronze':''}">#${i+1}</div>
       <div class="lb-avatar">${avatarHtml}</div>
       <div class="lb-info">
@@ -901,6 +914,7 @@ function showScreen(name){
   if(name==='profile')renderProfile();
   if(name==='leaderboard')loadLeaderboard();
   if(name==='battles')loadBattles();
+  // producer screen loaded separately via viewProducer()
 }
 
 // ══════════════════════════════════════════
@@ -1293,6 +1307,59 @@ async function postComment(beatId){
 async function deleteComment(commentId, beatId){
   await sb.from('comments').delete().eq('id', commentId);
   await loadComments(beatId);
+}
+
+// ══════════════════════════════════════════
+// PRODUCER PROFILE
+// ══════════════════════════════════════════
+let viewingProducerId = null;
+let prevScreen = 'home';
+
+async function viewProducer(userId){
+  if(!userId) return;
+  if(userId === currentUser?.id){ showScreen('profile'); return; }
+  prevScreen = currentScreen;
+  viewingProducerId = userId;
+  showScreen('producer');
+  // show challenge button if logged in and not own profile
+  const challengeBtn = document.getElementById('challenge-prod-btn');
+  if(currentUser && userId !== currentUser.id) challengeBtn.style.display='';
+  else challengeBtn.style.display='none';
+  // load profile
+  const {data:p} = await sb.from('profiles').select('*').eq('id', userId).single();
+  if(!p){ document.getElementById('producer-header').innerHTML='<div class="empty">PRODUCER NOT FOUND</div>'; return; }
+  const avatarHtml = p.avatar_url ? `<img src="${esc(p.avatar_url)}">` : '👤';
+  document.getElementById('producer-header').innerHTML=`
+    <div class="profile-avatar">${avatarHtml}</div>
+    <div class="profile-info">
+      <div class="profile-name">${esc(p.username||'Producer')}</div>
+      <div style="margin-bottom:8px;"><span class="rank-badge rank-${p.rank||'padawan'}">${(p.rank||'padawan').toUpperCase()}</span></div>
+      <div class="profile-bio">${esc(p.bio||'No bio yet')}</div>
+      <div class="profile-stats">
+        <div class="stat"><span class="stat-num">${p.rank_points||0}</span><span class="stat-label">POINTS</span></div>
+        <div class="stat"><span class="stat-num">${p.wins||0}</span><span class="stat-label">WINS</span></div>
+        <div class="stat"><span class="stat-num">${p.losses||0}</span><span class="stat-label">LOSSES</span></div>
+        <div class="stat"><span class="stat-num">${p.votes_cast||0}</span><span class="stat-label">VOTES CAST</span></div>
+      </div>
+    </div>`;
+  // load their beats
+  const {data:beats} = await sb.from('beats').select('*').eq('user_id', userId).order('created_at',{ascending:false});
+  const list = document.getElementById('producer-beats-list');
+  if(!beats||!beats.length){ list.innerHTML='<div class="empty">NO BEATS YET</div>'; return; }
+  list.innerHTML = beats.map(b=>feedCardHTML(b,p)).join('');
+}
+
+async function challengeFromProfile(){
+  if(!currentUser||!viewingProducerId) return;
+  // pre-fill the challenge modal with this producer selected
+  await openChallengePicker();
+  // select this producer in the dropdown
+  const sel = document.getElementById('ch-opponent');
+  for(let i=0; i<sel.options.length; i++){
+    if(sel.options[i].value === viewingProducerId){
+      sel.selectedIndex = i; break;
+    }
+  }
 }
 
 // drag drop upload
