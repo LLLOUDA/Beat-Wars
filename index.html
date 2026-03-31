@@ -730,7 +730,7 @@ async function sendReset(){
   if(!email){msg.className='auth-msg error';msg.textContent='ENTER YOUR EMAIL';return;}
   msg.className='auth-msg';msg.textContent='SENDING...';
   const {error}=await sb.auth.resetPasswordForEmail(email,{
-    redirectTo:'https://beat-wars.netlify.app'
+    redirectTo:'https://beat-wars.vercel.app'
   });
   if(error){msg.className='auth-msg error';msg.textContent=error.message;return;}
   msg.className='auth-msg success';msg.textContent='CHECK YOUR EMAIL FOR A RESET LINK!';
@@ -1694,15 +1694,20 @@ const playedThisSession = new Set(); // don't double count in same session
 async function incrementPlayCount(beatId){
   if(playedThisSession.has(beatId)) return;
   playedThisSession.add(beatId);
-  // update in DB
-  const {data:beat} = await sb.from('beats').select('play_count').eq('id',beatId).single();
-  if(beat){
-    await sb.from('beats').update({play_count:(beat.play_count||0)+1}).eq('id',beatId);
-    // update display
-    const card = document.getElementById('card-'+beatId);
-    if(card){
-      const playEl = card.querySelector('[data-plays]');
-      if(playEl) playEl.textContent = '▶ '+((beat.play_count||0)+1)+' plays';
+  // try RPC first, fallback to direct update
+  const {error} = await sb.rpc('increment_play_count', {beat_id: beatId});
+  if(error){
+    // fallback: read then write
+    const {data:beat} = await sb.from('beats').select('play_count').eq('id',beatId).single();
+    if(beat) await sb.from('beats').update({play_count:(beat.play_count||0)+1}).eq('id',beatId);
+  }
+  // update display live without reloading
+  const card = document.getElementById('card-'+beatId);
+  if(card){
+    const playEl = card.querySelector('[data-plays]');
+    if(playEl){
+      const current = parseInt(playEl.textContent.replace(/[^0-9]/g,''))||0;
+      playEl.textContent = '▶ '+(current+1)+' plays';
     }
   }
 }
@@ -1762,7 +1767,7 @@ document.addEventListener('click', ()=>{
 });
 
 function getBeatUrl(beatId){
-  return `https://beat-wars.netlify.app/?beat=${beatId}`;
+  return `https://beat-wars.vercel.app/?beat=${beatId}`;
 }
 
 async function copyBeatLink(beatId, title){
