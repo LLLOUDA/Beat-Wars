@@ -236,6 +236,12 @@ select option{background:#0a0020;color:#fff;}
 .pr-info{flex:1;}
 .pr-name{font-family:var(--fr);font-size:16px;color:#fff;margin-bottom:3px;}
 .pr-stats{font-family:var(--vt);font-size:13px;color:rgba(255,255,255,.4);letter-spacing:.5px;}
+/* SHARE */
+.share-menu{position:absolute;bottom:calc(100% + 8px);right:0;background:#0a0020;border:2px solid rgba(255,232,26,.3);border-radius:10px;padding:8px;display:none;z-index:200;min-width:180px;box-shadow:0 8px 32px rgba(0,0,0,.8);}
+.share-menu.open{display:block;}
+.share-option{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:6px;cursor:pointer;transition:background .15s;font-family:var(--vt);font-size:16px;color:#fff;letter-spacing:.5px;white-space:nowrap;}
+.share-option:hover{background:rgba(255,232,26,.08);}
+.share-wrap{position:relative;}
 @media(max-width:600px){
   .fc-cover{width:80px;min-width:80px;height:80px;}
   .profile-header{flex-direction:column;align-items:center;text-align:center;}
@@ -759,6 +765,14 @@ function feedCardHTML(b,prof){
         ${currentUser&&currentUser.id===b.user_id?`<button class="vote-btn" style="border-color:rgba(255,48,48,.3);color:rgba(255,48,48,.5);" onclick="deleteBeat('${b.id}')">🗑</button>`:''}
       </div>
     </div>
+    <div class="share-wrap" style="position:relative;">
+      <button class="vote-btn" onclick="toggleShareMenu('${b.id}',event)" style="font-size:12px;">📤</button>
+      <div class="share-menu" id="share-${b.id}">
+        <div class="share-option" onclick="copyBeatLink('${b.id}','${esc(b.title||'Untitled')}')">🔗 Copy Link</div>
+        <div class="share-option" onclick="shareToTwitter('${b.id}','${esc(b.title||'Untitled')}','${esc(prof?.username||'Producer')}')">🐦 Twitter / X</div>
+        <div class="share-option" onclick="shareToDiscord('${b.id}','${esc(b.title||'Untitled')}','${esc(prof?.username||'Producer')}')">💬 Copy for Discord</div>
+      </div>
+    </div>
     <button class="comments-toggle" onclick="toggleComments('${b.id}',this)">💬 COMMENTS <span id="ccount-${b.id}">${b.comment_count||''}</span></button>
     <div class="comments-section" id="comments-${b.id}">
       <div id="clist-${b.id}"><div style="font-family:var(--vt);font-size:14px;color:rgba(255,255,255,.2);padding:8px 0;letter-spacing:1px;">LOADING...</div></div>
@@ -1055,6 +1069,14 @@ function battleCardHTML(b,profMap,beatMap){
       ${isCompleted?`<span style="font-family:var(--px);font-size:7px;color:var(--y);">WINNER: ${esc(winnerName)}</span>`:''}
       ${isPending&&b.opponent_id===currentUser?.id?`<button class="nav-btn primary" style="font-size:6px;padding:6px 12px;" onclick="acceptBattle('${b.id}')">ACCEPT ⚔️</button>`:''}
       ${isActive?`<button class="vote-btn" onclick="openBattleVote('${b.id}','${esc(challenger.username)}','${esc(opponent.username)}')">⭐ VOTE</button>`:''}
+    </div>
+    <div class="share-wrap" style="position:relative;">
+      <button class="vote-btn" onclick="toggleShareMenu('${b.id}',event)" style="font-size:12px;">📤</button>
+      <div class="share-menu" id="share-${b.id}">
+        <div class="share-option" onclick="copyBeatLink('${b.id}','${esc(b.title||'Untitled')}')">🔗 Copy Link</div>
+        <div class="share-option" onclick="shareToTwitter('${b.id}','${esc(b.title||'Untitled')}','${esc(prof?.username||'Producer')}')">🐦 Twitter / X</div>
+        <div class="share-option" onclick="shareToDiscord('${b.id}','${esc(b.title||'Untitled')}','${esc(prof?.username||'Producer')}')">💬 Copy for Discord</div>
+      </div>
     </div>
     <button class="comments-toggle" onclick="toggleComments('${b.id}',this)">💬 COMMENTS <span id="ccount-${b.id}">${b.comment_count||''}</span></button>
     <div class="comments-section" id="comments-${b.id}">
@@ -1506,6 +1528,70 @@ async function confirmDeleteBeat(beatId){
   if(card) card.remove();
   // reload profile if on profile screen
   if(currentScreen === 'profile') renderProfile();
+}
+
+// ══════════════════════════════════════════
+// SHARE
+// ══════════════════════════════════════════
+let openShareMenu = null;
+
+function toggleShareMenu(beatId, e){
+  e.stopPropagation();
+  const menu = document.getElementById('share-'+beatId);
+  if(!menu) return;
+  const isOpen = menu.classList.contains('open');
+  // close any open menu
+  if(openShareMenu && openShareMenu !== menu) openShareMenu.classList.remove('open');
+  menu.classList.toggle('open', !isOpen);
+  openShareMenu = !isOpen ? menu : null;
+}
+
+// close share menus when clicking outside
+document.addEventListener('click', ()=>{
+  if(openShareMenu){ openShareMenu.classList.remove('open'); openShareMenu=null; }
+});
+
+function getBeatUrl(beatId){
+  return `https://beat-wars.netlify.app/?beat=${beatId}`;
+}
+
+async function copyBeatLink(beatId, title){
+  const url = getBeatUrl(beatId);
+  try{
+    await navigator.clipboard.writeText(url);
+    showToast('LINK COPIED! 🔗');
+  }catch(e){
+    // fallback
+    const el = document.createElement('textarea');
+    el.value = url; document.body.appendChild(el);
+    el.select(); document.execCommand('copy');
+    document.body.removeChild(el);
+    showToast('LINK COPIED! 🔗');
+  }
+  if(openShareMenu){ openShareMenu.classList.remove('open'); openShareMenu=null; }
+}
+
+function shareToTwitter(beatId, title, username){
+  const url = getBeatUrl(beatId);
+  const text = `🎵 Check out "${title}" by ${username} on Beat Wars ⚔️`;
+  const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
+  window.open(twitterUrl, '_blank');
+  if(openShareMenu){ openShareMenu.classList.remove('open'); openShareMenu=null; }
+}
+
+function shareToDiscord(beatId, title, username){
+  const url = getBeatUrl(beatId);
+  const text = `🎵 **${title}** by **${username}** on Beat Wars ⚔️\n${url}\n*Vote on this beat and battle the producer!*`;
+  navigator.clipboard.writeText(text).then(()=>{
+    showToast('DISCORD MESSAGE COPIED! 💬');
+  }).catch(()=>{
+    const el = document.createElement('textarea');
+    el.value = text; document.body.appendChild(el);
+    el.select(); document.execCommand('copy');
+    document.body.removeChild(el);
+    showToast('DISCORD MESSAGE COPIED! 💬');
+  });
+  if(openShareMenu){ openShareMenu.classList.remove('open'); openShareMenu=null; }
 }
 
 // drag drop upload
