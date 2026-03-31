@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>⚔️ BEAT WARS ⚔️</title>
+<title>⚔️ BEAT WARZ ⚔️</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&family=Fredoka+One&display=swap" rel="stylesheet">
 <style>
@@ -368,7 +368,7 @@ select option{background:#0a0020;color:#fff;}
 <div id="crawl">
   <div id="crawl-viewport">
     <div id="crawl-box">
-      <div id="crawl-logo">⚔️ BEAT WARS ⚔️<br><span style="font-size:.4em;color:#aaa;letter-spacing:.2em;">EPISODE I — THE PHANTOM BASS</span></div>
+      <div id="crawl-logo">⚔️ BEAT WARZ ⚔️<br><span style="font-size:.4em;color:#aaa;letter-spacing:.2em;">EPISODE I — THE PHANTOM BASS</span></div>
       <div id="crawl-text">
         A long time ago in a bedroom<br>far, far away...<br><br>
         A PRODUCER discovered<br>the power of the Force.<br><br>
@@ -425,7 +425,7 @@ select option{background:#0a0020;color:#fff;}
 
 <!-- NAV -->
 <nav id="nav" style="display:none;">
-  <div class="nav-logo">⚔️ BEAT WARS</div>
+  <div class="nav-logo">⚔️ BEAT WARZ</div>
   <div class="nav-right">
     <button class="nav-btn" onclick="showScreen('home')">FEED</button>
     <button class="nav-btn" onclick="showScreen('battles')">⚔️ BATTLES</button>
@@ -460,7 +460,7 @@ select option{background:#0a0020;color:#fff;}
 <!-- AUTH SCREEN -->
 <div id="auth-screen" class="screen active">
   <div style="text-align:center;padding:40px 20px 24px;">
-    <div style="font-family:var(--px);font-size:clamp(16px,4vw,32px);color:var(--y);text-shadow:0 0 20px var(--y);margin-bottom:8px;">⚔️ BEAT WARS ⚔️</div>
+    <div style="font-family:var(--px);font-size:clamp(16px,4vw,32px);color:var(--y);text-shadow:0 0 20px var(--y);margin-bottom:8px;">⚔️ BEAT WARZ ⚔️</div>
     <div style="font-family:var(--vt);font-size:20px;color:rgba(255,255,255,.4);letter-spacing:4px;">BATTLE THEM BEATZ</div>
   </div>
   <div class="auth-box">
@@ -492,7 +492,7 @@ select option{background:#0a0020;color:#fff;}
       <div class="field"><label>USERNAME</label><input type="text" id="signup-username" placeholder="ProducerName" maxlength="20"></div>
       <div class="field"><label>EMAIL</label><input type="email" id="signup-email" placeholder="your@email.com"></div>
       <div class="field"><label>PASSWORD</label><input type="password" id="signup-pass" placeholder="min 6 characters"></div>
-      <button class="auth-submit" onclick="signup()">JOIN BEAT WARS</button>
+      <button class="auth-submit" onclick="signup()">JOIN BEAT WARZ</button>
     </div>
     <div class="auth-msg" id="auth-msg"></div>
   </div>
@@ -853,7 +853,7 @@ async function signup(){
   currentUser=data.user;
   await sb.from('profiles').insert({id:currentUser.id,username,email,rank:'padawan',rank_points:0,wins:0,losses:0,votes_cast:0});
   await loadProfile();
-  msg.className='auth-msg success';msg.textContent='WELCOME TO BEAT WARS!';
+  msg.className='auth-msg success';msg.textContent='WELCOME TO BEAT WARZ!';
   setTimeout(()=>showScreen('home'),1200);
 }
 
@@ -1870,7 +1870,7 @@ async function copyBeatLink(beatId, title){
 
 function shareToTwitter(beatId, title, username){
   const url = getBeatUrl(beatId);
-  const text = `🎵 Check out "${title}" by ${username} on Beat Wars ⚔️`;
+  const text = `🎵 Check out "${title}" by ${username} on Beat Warz ⚔️`;
   const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
   window.open(twitterUrl, '_blank');
   if(openShareMenu){ openShareMenu.classList.remove('open'); openShareMenu=null; }
@@ -1878,7 +1878,7 @@ function shareToTwitter(beatId, title, username){
 
 function shareToDiscord(beatId, title, username){
   const url = getBeatUrl(beatId);
-  const text = `🎵 **${title}** by **${username}** on Beat Wars ⚔️\n${url}\n*Vote on this beat and battle the producer!*`;
+  const text = `🎵 **${title}** by **${username}** on Beat Warz ⚔️\n${url}\n*Vote on this beat and battle the producer!*`;
   navigator.clipboard.writeText(text).then(()=>{
     showToast('DISCORD MESSAGE COPIED! 💬');
   }).catch(()=>{
@@ -2068,7 +2068,7 @@ async function castTourneyVote(matchId,side,winnerName){
 
 // Create a test tournament (for you to seed the first one)
 async function createTestTournament(){
-  const name = prompt('Tournament name:','BEAT WARS CUP #1');
+  const name = prompt('Tournament name:','BEAT WARZ CUP #1');
   if(!name) return;
   const {error}=await sb.from('tournaments').insert({
     name,status:'upcoming',mode:'casual',
