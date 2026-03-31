@@ -218,6 +218,24 @@ select option{background:#0a0020;color:#fff;}
 .comment-submit:hover{background:#fff;}
 .comment-delete{background:transparent;border:none;color:rgba(255,48,48,.4);cursor:pointer;font-size:11px;padding:0 4px;transition:color .15s;}
 .comment-delete:hover{color:var(--r);}
+/* SEARCH */
+#search-screen{padding:20px 20px 100px;align-items:center;}
+.search-wrap{width:100%;max-width:700px;position:relative;margin-bottom:20px;}
+.search-input{width:100%;background:rgba(255,255,255,.05);border:2px solid rgba(255,232,26,.3);border-radius:10px;color:#fff;padding:14px 48px 14px 16px;font-family:var(--vt);font-size:22px;outline:none;letter-spacing:1px;transition:border-color .2s;}
+.search-input:focus{border-color:var(--y);}
+.search-input::placeholder{color:rgba(255,255,255,.25);}
+.search-clear{position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:none;color:rgba(255,255,255,.3);font-size:18px;cursor:pointer;transition:color .2s;}
+.search-clear:hover{color:#fff;}
+.search-tabs{display:flex;gap:8px;margin-bottom:16px;width:100%;max-width:700px;}
+.search-results{width:100%;max-width:700px;}
+.search-section-title{font-family:var(--px);font-size:7px;color:rgba(255,255,255,.3);letter-spacing:2px;margin-bottom:10px;margin-top:4px;}
+.producer-result{display:flex;align-items:center;gap:12px;padding:12px 16px;background:linear-gradient(145deg,rgba(10,0,25,.92),rgba(0,4,18,.96));border:2px solid rgba(255,232,26,.15);border-radius:12px;margin-bottom:8px;cursor:pointer;transition:border-color .2s,transform .2s;}
+.producer-result:hover{border-color:rgba(255,232,26,.4);transform:translateX(4px);}
+.pr-avatar{width:44px;height:44px;border-radius:50%;border:2px solid rgba(255,232,26,.25);background:rgba(255,232,26,.08);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;overflow:hidden;}
+.pr-avatar img{width:100%;height:100%;object-fit:cover;}
+.pr-info{flex:1;}
+.pr-name{font-family:var(--fr);font-size:16px;color:#fff;margin-bottom:3px;}
+.pr-stats{font-family:var(--vt);font-size:13px;color:rgba(255,255,255,.4);letter-spacing:.5px;}
 @media(max-width:600px){
   .fc-cover{width:80px;min-width:80px;height:80px;}
   .profile-header{flex-direction:column;align-items:center;text-align:center;}
@@ -279,6 +297,7 @@ select option{background:#0a0020;color:#fff;}
     <button class="nav-btn" onclick="showScreen('home')">FEED</button>
     <button class="nav-btn" onclick="showScreen('battles')">⚔️ BATTLES</button>
     <button class="nav-btn" onclick="showScreen('leaderboard')">RANKS</button>
+    <button class="nav-btn" onclick="showScreen('search')">🔍</button>
     <button class="nav-btn primary" onclick="showScreen('upload')">+ UPLOAD</button>
     <div id="notif-wrap" style="display:none;">
       <button id="notif-btn" onclick="toggleNotifDropdown()">
@@ -464,6 +483,22 @@ select option{background:#0a0020;color:#fff;}
   <div style="width:100%;max-width:700px;margin-top:20px;">
     <div class="section-title">BEATS</div>
     <div id="producer-beats-list"><div class="loading">LOADING...</div></div>
+  </div>
+</div>
+
+<!-- SEARCH SCREEN -->
+<div id="search-screen" class="screen">
+  <div class="search-wrap">
+    <input type="text" class="search-input" id="main-search" placeholder="SEARCH BEATS OR PRODUCERS..." oninput="runSearch(this.value)">
+    <button class="search-clear" onclick="clearMainSearch()">✕</button>
+  </div>
+  <div class="search-tabs">
+    <button class="feed-tab active" onclick="setSearchTab('all',this)">ALL</button>
+    <button class="feed-tab" onclick="setSearchTab('beats',this)">BEATS</button>
+    <button class="feed-tab" onclick="setSearchTab('producers',this)">PRODUCERS</button>
+  </div>
+  <div class="search-results" id="search-results">
+    <div class="empty">START TYPING TO SEARCH...</div>
   </div>
 </div>
 
@@ -915,6 +950,7 @@ function showScreen(name){
   if(name==='leaderboard')loadLeaderboard();
   if(name==='battles')loadBattles();
   // producer screen loaded separately via viewProducer()
+  if(name==='search'){ setTimeout(()=>document.getElementById('main-search').focus(),100); }
 }
 
 // ══════════════════════════════════════════
@@ -1360,6 +1396,82 @@ async function challengeFromProfile(){
       sel.selectedIndex = i; break;
     }
   }
+}
+
+// ══════════════════════════════════════════
+// SEARCH
+// ══════════════════════════════════════════
+let searchTab = 'all';
+let searchTimeout = null;
+
+function setSearchTab(tab, el){
+  searchTab = tab;
+  document.querySelectorAll('#search-screen .feed-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  const val = document.getElementById('main-search').value;
+  if(val.trim()) runSearch(val);
+}
+
+function clearMainSearch(){
+  document.getElementById('main-search').value = '';
+  document.getElementById('search-results').innerHTML = '<div class="empty">START TYPING TO SEARCH...</div>';
+}
+
+function runSearch(val){
+  clearTimeout(searchTimeout);
+  if(!val.trim()){
+    document.getElementById('search-results').innerHTML = '<div class="empty">START TYPING TO SEARCH...</div>';
+    return;
+  }
+  document.getElementById('search-results').innerHTML = '<div class="loading">SEARCHING...</div>';
+  searchTimeout = setTimeout(()=>doSearch(val.trim()), 300);
+}
+
+async function doSearch(query){
+  const results = document.getElementById('search-results');
+  let html = '';
+  const showBeats = searchTab === 'all' || searchTab === 'beats';
+  const showProducers = searchTab === 'all' || searchTab === 'producers';
+
+  if(showProducers){
+    const {data:producers} = await sb.from('profiles')
+      .select('*')
+      .ilike('username', `%${query}%`)
+      .limit(10);
+    if(producers && producers.length){
+      html += `<div class="search-section-title">PRODUCERS</div>`;
+      html += producers.map(p=>`
+        <div class="producer-result" onclick="viewProducer('${p.id}')">
+          <div class="pr-avatar">${p.avatar_url?`<img src="${esc(p.avatar_url)}">`:'👤'}</div>
+          <div class="pr-info">
+            <div class="pr-name">${esc(p.username||'Producer')}</div>
+            <div class="pr-stats">${p.rank_points||0} pts · W:${p.wins||0} L:${p.losses||0}</div>
+          </div>
+          <span class="rank-badge rank-${p.rank||'padawan'}">${(p.rank||'padawan').toUpperCase()}</span>
+        </div>`).join('');
+    }
+  }
+
+  if(showBeats){
+    const {data:beats} = await sb.from('beats')
+      .select('*')
+      .or(`title.ilike.%${query}%,genre.ilike.%${query}%,description.ilike.%${query}%`)
+      .limit(20);
+    if(beats && beats.length){
+      // load profiles for beats
+      const userIds = [...new Set(beats.map(b=>b.user_id).filter(Boolean))];
+      let profMap = {};
+      if(userIds.length){
+        const {data:profs} = await sb.from('profiles').select('id,username,avatar_url,rank').in('id',userIds);
+        if(profs) profs.forEach(p=>profMap[p.id]=p);
+      }
+      html += `<div class="search-section-title" style="margin-top:${showProducers?'20px':'4px'};">BEATS</div>`;
+      html += beats.map(b=>feedCardHTML(b, profMap[b.user_id]||null)).join('');
+    }
+  }
+
+  if(!html) html = `<div class="empty">NO RESULTS FOR "${esc(query)}"</div>`;
+  results.innerHTML = html;
 }
 
 // drag drop upload
