@@ -756,6 +756,7 @@ function feedCardHTML(b,prof){
       <div class="fc-vote">
         <button class="vote-btn" onclick="openVoteModal('${b.id}','${esc(b.title||'Untitled')}')">⭐ VOTE</button>
         <span style="font-family:var(--vt);font-size:15px;color:rgba(255,255,255,.3);align-self:center;margin-left:4px;" id="vcount-${b.id}">${b.votes_up||0}↑</span>
+        ${currentUser&&currentUser.id===b.user_id?`<button class="vote-btn" style="border-color:rgba(255,48,48,.3);color:rgba(255,48,48,.5);" onclick="deleteBeat('${b.id}')">🗑</button>`:''}
       </div>
     </div>
     <button class="comments-toggle" onclick="toggleComments('${b.id}',this)">💬 COMMENTS <span id="ccount-${b.id}">${b.comment_count||''}</span></button>
@@ -1472,6 +1473,39 @@ async function doSearch(query){
 
   if(!html) html = `<div class="empty">NO RESULTS FOR "${esc(query)}"</div>`;
   results.innerHTML = html;
+}
+
+// ══════════════════════════════════════════
+// DELETE BEAT
+// ══════════════════════════════════════════
+function deleteBeat(beatId){
+  showConfirmDelete(beatId);
+}
+
+function showConfirmDelete(beatId){
+  // reuse the battle vote modal as a confirm dialog
+  const content = document.getElementById('bv-content');
+  const msg = document.getElementById('bv-msg');
+  msg.textContent = '';
+  content.innerHTML = `
+    <div style="font-family:var(--vt);font-size:18px;color:rgba(255,255,255,.6);margin-bottom:16px;letter-spacing:1px;">DELETE THIS BEAT? THIS CANNOT BE UNDONE.</div>
+    <div style="display:flex;gap:10px;">
+      <button class="m-btn m-btn-danger" style="flex:1;" onclick="confirmDeleteBeat('${beatId}')">YES DELETE IT</button>
+      <button class="m-btn m-btn-cancel" style="flex:1;" onclick="closeModal('battle-vote-modal')">CANCEL</button>
+    </div>`;
+  openModal('battle-vote-modal');
+}
+
+async function confirmDeleteBeat(beatId){
+  const {error} = await sb.from('beats').delete().eq('id', beatId);
+  if(error){ showToast('ERROR: '+error.message); return; }
+  closeModal('battle-vote-modal');
+  showToast('BEAT DELETED');
+  // remove card from DOM
+  const card = document.getElementById('card-'+beatId);
+  if(card) card.remove();
+  // reload profile if on profile screen
+  if(currentScreen === 'profile') renderProfile();
 }
 
 // drag drop upload
