@@ -179,6 +179,26 @@ select option{background:#0a0020;color:#fff;}
 .battle-status.active{background:rgba(57,255,20,.15);color:var(--g);border:1px solid var(--g);}
 .battle-status.pending{background:rgba(255,232,26,.15);color:var(--y);border:1px solid var(--y);}
 .battle-status.completed{background:rgba(255,255,255,.08);color:rgba(255,255,255,.4);border:1px solid rgba(255,255,255,.1);}
+/* NOTIFICATIONS */
+#notif-btn{position:relative;cursor:pointer;background:transparent;border:2px solid rgba(255,232,26,.4);border-radius:6px;padding:8px 12px;font-size:16px;transition:all .2s;}
+#notif-btn:hover{background:rgba(255,232,26,.1);border-color:var(--y);}
+#notif-badge{position:absolute;top:-6px;right:-6px;background:var(--r);color:#fff;font-family:var(--px);font-size:6px;padding:2px 5px;border-radius:10px;display:none;min-width:16px;text-align:center;}
+#notif-badge.show{display:block;}
+#notif-dropdown{display:none;position:absolute;top:calc(100% + 8px);right:0;width:300px;background:#0a0020;border:2px solid rgba(255,232,26,.3);border-radius:12px;z-index:500;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.8);}
+#notif-dropdown.open{display:block;}
+.notif-header{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid rgba(255,255,255,.08);}
+.notif-header-title{font-family:var(--px);font-size:7px;color:var(--y);}
+.notif-clear{font-family:var(--px);font-size:6px;color:rgba(255,255,255,.3);cursor:pointer;background:none;border:none;transition:color .2s;}
+.notif-clear:hover{color:var(--y);}
+.notif-list{max-height:320px;overflow-y:auto;}
+.notif-item{padding:12px 14px;border-bottom:1px solid rgba(255,255,255,.05);cursor:pointer;transition:background .15s;}
+.notif-item:hover{background:rgba(255,232,26,.05);}
+.notif-item.unread{background:rgba(255,232,26,.04);}
+.notif-item.unread::before{content:'';display:inline-block;width:6px;height:6px;background:var(--y);border-radius:50%;margin-right:8px;vertical-align:middle;}
+.notif-msg{font-family:var(--vt);font-size:15px;color:#fff;letter-spacing:.5px;line-height:1.4;}
+.notif-time{font-family:var(--vt);font-size:12px;color:rgba(255,255,255,.3);margin-top:3px;letter-spacing:.5px;}
+.notif-empty{font-family:var(--vt);font-size:16px;color:rgba(255,255,255,.25);text-align:center;padding:24px;letter-spacing:1px;}
+#notif-wrap{position:relative;}
 @media(max-width:600px){
   .fc-cover{width:80px;min-width:80px;height:80px;}
   .profile-header{flex-direction:column;align-items:center;text-align:center;}
@@ -241,6 +261,21 @@ select option{background:#0a0020;color:#fff;}
     <button class="nav-btn" onclick="showScreen('battles')">⚔️ BATTLES</button>
     <button class="nav-btn" onclick="showScreen('leaderboard')">RANKS</button>
     <button class="nav-btn primary" onclick="showScreen('upload')">+ UPLOAD</button>
+    <div id="notif-wrap" style="display:none;">
+      <button id="notif-btn" onclick="toggleNotifDropdown()">
+        🔔
+        <span id="notif-badge">0</span>
+      </button>
+      <div id="notif-dropdown">
+        <div class="notif-header">
+          <span class="notif-header-title">NOTIFICATIONS</span>
+          <button class="notif-clear" onclick="markAllRead()">MARK ALL READ</button>
+        </div>
+        <div class="notif-list" id="notif-list">
+          <div class="notif-empty">NO NOTIFICATIONS YET</div>
+        </div>
+      </div>
+    </div>
     <div id="nav-user" style="display:none;" onclick="showScreen('profile')">
       <div id="nav-avatar">👤</div>
       <span id="nav-username"></span>
@@ -499,6 +534,7 @@ async function logout(){
   document.getElementById('nav').style.display='none';
   document.getElementById('nav-user').style.display='none';
   document.getElementById('nav-logout').style.display='none';
+  document.getElementById('notif-wrap').style.display='none';
   showScreen('auth');
 }
 
@@ -512,6 +548,8 @@ async function loadProfile(){
   document.getElementById('nav-username').textContent=data?.username||'PRODUCER';
   document.getElementById('nav-user').style.display='flex';
   document.getElementById('nav-logout').style.display='';
+  document.getElementById('notif-wrap').style.display='';
+  loadNotifications();
 }
 
 function updateNavAvatar(){
@@ -958,6 +996,10 @@ async function sendChallenge(){
     ends_at:endsAt
   });
   if(error){msg.textContent='ERROR: '+error.message;msg.style.color='var(--r)';return;}
+  // notify opponent
+  const opponent = document.getElementById('ch-opponent');
+  const opponentName = opponent.options[opponent.selectedIndex].text;
+  await createNotification(opponentId, 'battle', `⚔️ ${currentProfile.username} challenged you to a battle! Check PENDING battles.`, 'battles');
   msg.textContent='CHALLENGE SENT! ⚔️';msg.style.color='var(--g)';
   setTimeout(()=>{closeModal('challenge-modal');loadBattles();},1000);
 }
@@ -974,6 +1016,9 @@ async function acceptBattle(battleId){
     status:'active'
   }).eq('id',battleId);
   if(error){showToast('ERROR: '+error.message);return;}
+  // notify challenger
+  const {data:battleData} = await sb.from('battles').select('challenger_id').eq('id',battleId).single();
+  if(battleData) await createNotification(battleData.challenger_id, 'battle', `⚔️ ${currentProfile.username} accepted your battle challenge! It's live now.`, 'battles');
   showToast('BATTLE ACCEPTED! ⚔️');
   loadBattles();
 }
@@ -1021,6 +1066,84 @@ async function castBattleVote(battleId,side,challengerName,opponentName){
   msg.style.color='var(--g)';
   setTimeout(()=>{closeModal('battle-vote-modal');loadBattles();},1000);
 }
+
+// ══════════════════════════════════════════
+// NOTIFICATIONS
+// ══════════════════════════════════════════
+let notifOpen = false;
+
+function toggleNotifDropdown(){
+  notifOpen = !notifOpen;
+  document.getElementById('notif-dropdown').classList.toggle('open', notifOpen);
+  if(notifOpen) loadNotifications();
+}
+
+// close dropdown when clicking outside
+document.addEventListener('click', e=>{
+  const wrap = document.getElementById('notif-wrap');
+  if(wrap && !wrap.contains(e.target) && notifOpen){
+    notifOpen = false;
+    document.getElementById('notif-dropdown').classList.remove('open');
+  }
+});
+
+async function loadNotifications(){
+  if(!currentUser) return;
+  const {data} = await sb.from('notifications')
+    .select('*')
+    .eq('user_id', currentUser.id)
+    .order('created_at', {ascending:false})
+    .limit(20);
+  
+  const unread = data ? data.filter(n=>!n.read).length : 0;
+  const badge = document.getElementById('notif-badge');
+  badge.textContent = unread;
+  badge.classList.toggle('show', unread > 0);
+
+  const list = document.getElementById('notif-list');
+  if(!data || !data.length){
+    list.innerHTML = '<div class="notif-empty">NO NOTIFICATIONS YET</div>';
+    return;
+  }
+  list.innerHTML = data.map(n=>`
+    <div class="notif-item ${n.read?'':'unread'}" onclick="clickNotif('${n.id}','${n.link||''}')">
+      <div class="notif-msg">${esc(n.message)}</div>
+      <div class="notif-time">${timeAgo(n.created_at)}</div>
+    </div>`).join('');
+}
+
+async function clickNotif(id, link){
+  // mark as read
+  await sb.from('notifications').update({read:true}).eq('id',id);
+  loadNotifications();
+  if(link) showScreen(link);
+  notifOpen = false;
+  document.getElementById('notif-dropdown').classList.remove('open');
+}
+
+async function markAllRead(){
+  if(!currentUser) return;
+  await sb.from('notifications').update({read:true}).eq('user_id', currentUser.id);
+  loadNotifications();
+}
+
+async function createNotification(userId, type, message, link=''){
+  await sb.from('notifications').insert({user_id:userId, type, message, link, read:false});
+}
+
+function timeAgo(dateStr){
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff/60000);
+  const hrs = Math.floor(diff/3600000);
+  const days = Math.floor(diff/86400000);
+  if(mins < 1) return 'just now';
+  if(mins < 60) return `${mins}m ago`;
+  if(hrs < 24) return `${hrs}h ago`;
+  return `${days}d ago`;
+}
+
+// Poll for new notifications every 30 seconds
+setInterval(()=>{ if(currentUser) loadNotifications(); }, 30000);
 
 // drag drop upload
 const drop=document.getElementById('upload-drop');
