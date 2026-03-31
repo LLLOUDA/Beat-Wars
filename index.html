@@ -635,7 +635,7 @@ async function login(){
     // get email from auth.users via our own lookup
     const {data:userList}=await sb.from('profiles').select('id').eq('username',identifier).single();
     // look up email stored in profiles
-    const {data:emailProf}=await sb.from('profiles').select('email').eq('username',identifier).maybeSingle();
+    const {data:emailProf}=await sb.from('profiles').select('email').ilike('username',identifier).maybeSingle();
     if(!emailProf?.email){msg.className='auth-msg error';msg.textContent='CANNOT FIND ACCOUNT — TRY YOUR EMAIL';return;}
     email=emailProf.email;
   }
