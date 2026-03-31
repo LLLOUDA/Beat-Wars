@@ -746,13 +746,8 @@ async function login(){
   // if not an email, look up email from username
   let email=identifier;
   if(!identifier.includes('@')){
-    const {data:prof,error:profErr}=await sb.from('profiles').select('id').eq('username',identifier).maybeSingle();
-    if(profErr||!prof){msg.className='auth-msg error';msg.textContent='USERNAME NOT FOUND';return;}
-    // get email from auth.users via our own lookup
-    const {data:userList}=await sb.from('profiles').select('id').eq('username',identifier).single();
-    // look up email stored in profiles
-    const {data:emailProf}=await sb.from('profiles').select('email').ilike('username',identifier).maybeSingle();
-    if(!emailProf?.email){msg.className='auth-msg error';msg.textContent='CANNOT FIND ACCOUNT — TRY YOUR EMAIL';return;}
+    const {data:emailProf}=await sb.from('profiles').select('email').ilike('username',identifier.trim()).maybeSingle();
+    if(!emailProf?.email){msg.className='auth-msg error';msg.textContent='USERNAME NOT FOUND — TRY YOUR EMAIL';return;}
     email=emailProf.email;
   }
   // set session persistence
