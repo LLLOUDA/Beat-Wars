@@ -14,6 +14,8 @@
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 body{background:var(--dark);font-family:var(--px);color:#fff;min-height:100vh;overflow-x:hidden;}
+select{color-scheme:dark;}
+select option{background:#0a0020!important;color:#fff!important;}
 #stars{position:fixed;inset:0;z-index:0;pointer-events:none;}
 .screen{display:none;position:relative;z-index:10;min-height:100vh;}
 .screen.active{display:flex;flex-direction:column;align-items:center;}
@@ -49,6 +51,8 @@ body{background:var(--dark);font-family:var(--px);color:#fff;min-height:100vh;ov
 .field{margin-bottom:16px;}
 .field label{display:block;font-family:var(--px);font-size:6px;color:rgba(255,255,255,.35);margin-bottom:5px;letter-spacing:2px;}
 .field input,.field select,.field textarea{width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.15);color:#fff;padding:11px 14px;font-family:var(--vt);font-size:18px;outline:none;border-radius:7px;transition:border-color .2s;}
+.field select option{background:#0a0020;color:#fff;}
+select option{background:#0a0020;color:#fff;}
 .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--y);}
 .field textarea{resize:none;height:80px;}
 .auth-submit{width:100%;padding:13px;font-family:var(--px);font-size:9px;background:var(--y);color:#000;border:none;border-radius:8px;cursor:pointer;transition:all .2s;margin-top:8px;}
@@ -359,19 +363,19 @@ body{background:var(--dark);font-family:var(--px);color:#fff;min-height:100vh;ov
     <div class="modal-title">⚔️ START A BATTLE</div>
     <div class="field">
       <label>PICK YOUR BEAT</label>
-      <select id="ch-my-beat" style="width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.15);color:#fff;padding:11px 14px;font-family:var(--vt);font-size:18px;outline:none;border-radius:7px;">
+      <select id="ch-my-beat" style="width:100%;background:#0a0020;border:1px solid rgba(255,255,255,.15);color:#fff;padding:11px 14px;font-family:var(--vt);font-size:18px;outline:none;border-radius:7px;">
         <option value="">loading your beats...</option>
       </select>
     </div>
     <div class="field">
       <label>CHALLENGE PRODUCER</label>
-      <select id="ch-opponent" style="width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.15);color:#fff;padding:11px 14px;font-family:var(--vt);font-size:18px;outline:none;border-radius:7px;">
+      <select id="ch-opponent" style="width:100%;background:#0a0020;border:1px solid rgba(255,255,255,.15);color:#fff;padding:11px 14px;font-family:var(--vt);font-size:18px;outline:none;border-radius:7px;">
         <option value="">loading producers...</option>
       </select>
     </div>
     <div class="field">
       <label>BATTLE MODE</label>
-      <select id="ch-mode" style="width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.15);color:#fff;padding:11px 14px;font-family:var(--vt);font-size:18px;outline:none;border-radius:7px;">
+      <select id="ch-mode" style="width:100%;background:#0a0020;border:1px solid rgba(255,255,255,.15);color:#fff;padding:11px 14px;font-family:var(--vt);font-size:18px;outline:none;border-radius:7px;">
         <option value="casual">CASUAL</option>
         <option value="ranked">RANKED</option>
       </select>
