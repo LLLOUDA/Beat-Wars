@@ -1140,20 +1140,37 @@ async function uploadBeat(){
 // ══════════════════════════════════════════
 // VOTING
 // ══════════════════════════════════════════
-function openVoteModal(beatId,beatTitle){
+async function openVoteModal(beatId,beatTitle){
   if(!currentUser){showToast('LOGIN TO VOTE');return;}
   voteTarget=beatId;
   voteRatings={energy:0,originality:0,production:0,would_use:0};
   document.getElementById('vote-beat-name').textContent=beatTitle;
-  document.getElementById('vote-msg').textContent='';
+  const msg=document.getElementById('vote-msg');
+  msg.textContent='';
+  // check for existing vote
+  const {data:existing}=await sb.from('votes').select('*').eq('beat_id',beatId).eq('voter_id',currentUser.id).maybeSingle();
+  if(existing){
+    voteRatings={energy:existing.energy||0,originality:existing.originality||0,production:existing.production||0,would_use:existing.would_use||0};
+    msg.textContent='YOU ALREADY VOTED ON THIS BEAT';
+    msg.style.color='var(--c)';
+  }
   ['energy','originality','production','would_use'].forEach(cat=>{
     const wrap=document.getElementById('vs-'+cat);
     wrap.innerHTML=[1,2,3,4,5].map(i=>`<span class="v-star" data-cat="${cat}" data-val="${i}">⭐</span>`).join('');
-    wrap.querySelectorAll('.v-star').forEach(s=>s.addEventListener('click',()=>{
-      voteRatings[cat]=parseInt(s.dataset.val);
-      wrap.querySelectorAll('.v-star').forEach((x,xi)=>x.classList.toggle('on',xi<voteRatings[cat]));
-    }));
+    // show existing ratings
+    wrap.querySelectorAll('.v-star').forEach((s,xi)=>{
+      if(xi<voteRatings[cat]) s.classList.add('on');
+      if(!existing){
+        s.addEventListener('click',()=>{
+          voteRatings[cat]=parseInt(s.dataset.val);
+          wrap.querySelectorAll('.v-star').forEach((x,xi)=>x.classList.toggle('on',xi<voteRatings[cat]));
+        });
+      }
+    });
   });
+  // hide submit button if already voted
+  const submitBtn=document.querySelector('#vote-modal .m-btn-primary');
+  if(submitBtn) submitBtn.style.display=existing?'none':'';
   openModal('vote-modal');
 }
 
