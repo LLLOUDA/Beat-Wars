@@ -199,6 +199,25 @@ select option{background:#0a0020;color:#fff;}
 .notif-time{font-family:var(--vt);font-size:12px;color:rgba(255,255,255,.3);margin-top:3px;letter-spacing:.5px;}
 .notif-empty{font-family:var(--vt);font-size:16px;color:rgba(255,255,255,.25);text-align:center;padding:24px;letter-spacing:1px;}
 #notif-wrap{position:relative;}
+/* COMMENTS */
+.comments-section{padding:12px 16px;border-top:1px solid rgba(255,255,255,.06);display:none;}
+.comments-section.open{display:block;}
+.comments-toggle{background:transparent;border:none;font-family:var(--vt);font-size:15px;color:rgba(255,255,255,.4);cursor:pointer;padding:8px 16px;border-top:1px solid rgba(255,255,255,.06);width:100%;text-align:left;transition:color .2s;letter-spacing:1px;}
+.comments-toggle:hover{color:rgba(255,255,255,.7);}
+.comment-item{display:flex;gap:10px;margin-bottom:12px;align-items:flex-start;}
+.comment-avatar{width:26px;height:26px;border-radius:50%;border:1px solid rgba(255,232,26,.25);background:rgba(255,232,26,.08);display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;overflow:hidden;}
+.comment-avatar img{width:100%;height:100%;object-fit:cover;}
+.comment-body{flex:1;}
+.comment-username{font-family:var(--px);font-size:6px;color:var(--y);margin-bottom:3px;letter-spacing:1px;}
+.comment-text{font-family:var(--vt);font-size:15px;color:rgba(255,255,255,.75);line-height:1.4;letter-spacing:.5px;}
+.comment-time{font-family:var(--vt);font-size:11px;color:rgba(255,255,255,.25);margin-top:2px;}
+.comment-input-row{display:flex;gap:8px;margin-top:10px;}
+.comment-input{flex:1;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);color:#fff;padding:8px 12px;font-family:var(--vt);font-size:16px;outline:none;border-radius:6px;transition:border-color .2s;}
+.comment-input:focus{border-color:var(--y);}
+.comment-submit{background:var(--y);color:#000;border:none;padding:8px 14px;font-family:var(--px);font-size:7px;border-radius:6px;cursor:pointer;transition:all .2s;white-space:nowrap;}
+.comment-submit:hover{background:#fff;}
+.comment-delete{background:transparent;border:none;color:rgba(255,48,48,.4);cursor:pointer;font-size:11px;padding:0 4px;transition:color .15s;}
+.comment-delete:hover{color:var(--r);}
 @media(max-width:600px){
   .fc-cover{width:80px;min-width:80px;height:80px;}
   .profile-header{flex-direction:column;align-items:center;text-align:center;}
@@ -691,6 +710,14 @@ function feedCardHTML(b,prof){
         <span style="font-family:var(--vt);font-size:15px;color:rgba(255,255,255,.3);align-self:center;margin-left:4px;" id="vcount-${b.id}">${b.votes_up||0}↑</span>
       </div>
     </div>
+    <button class="comments-toggle" onclick="toggleComments('${b.id}',this)">💬 COMMENTS <span id="ccount-${b.id}">${b.comment_count||''}</span></button>
+    <div class="comments-section" id="comments-${b.id}">
+      <div id="clist-${b.id}"><div style="font-family:var(--vt);font-size:14px;color:rgba(255,255,255,.2);padding:8px 0;letter-spacing:1px;">LOADING...</div></div>
+      <div class="comment-input-row">
+        <input type="text" class="comment-input" id="cinput-${b.id}" placeholder="DROP YOUR THOUGHTS..." maxlength="200">
+        <button class="comment-submit" onclick="postComment('${b.id}')">POST</button>
+      </div>
+    </div>
   </div>`;
 }
 
@@ -943,6 +970,14 @@ function battleCardHTML(b,profMap,beatMap){
       ${isPending&&b.opponent_id===currentUser?.id?`<button class="nav-btn primary" style="font-size:6px;padding:6px 12px;" onclick="acceptBattle('${b.id}')">ACCEPT ⚔️</button>`:''}
       ${isActive?`<button class="vote-btn" onclick="openBattleVote('${b.id}','${esc(challenger.username)}','${esc(opponent.username)}')">⭐ VOTE</button>`:''}
     </div>
+    <button class="comments-toggle" onclick="toggleComments('${b.id}',this)">💬 COMMENTS <span id="ccount-${b.id}">${b.comment_count||''}</span></button>
+    <div class="comments-section" id="comments-${b.id}">
+      <div id="clist-${b.id}"><div style="font-family:var(--vt);font-size:14px;color:rgba(255,255,255,.2);padding:8px 0;letter-spacing:1px;">LOADING...</div></div>
+      <div class="comment-input-row">
+        <input type="text" class="comment-input" id="cinput-${b.id}" placeholder="DROP YOUR THOUGHTS..." maxlength="200">
+        <button class="comment-submit" onclick="postComment('${b.id}')">POST</button>
+      </div>
+    </div>
   </div>`;
 }
 
@@ -1144,6 +1179,77 @@ function timeAgo(dateStr){
 
 // Poll for new notifications every 30 seconds
 setInterval(()=>{ if(currentUser) loadNotifications(); }, 30000);
+
+// ══════════════════════════════════════════
+// COMMENTS
+// ══════════════════════════════════════════
+async function toggleComments(beatId, btn){
+  const section = document.getElementById('comments-'+beatId);
+  const isOpen = section.classList.contains('open');
+  if(isOpen){
+    section.classList.remove('open');
+    return;
+  }
+  section.classList.add('open');
+  await loadComments(beatId);
+}
+
+async function loadComments(beatId){
+  const list = document.getElementById('clist-'+beatId);
+  if(!list) return;
+  const {data:comments} = await sb.from('comments')
+    .select('*, profiles(username, avatar_url)')
+    .eq('beat_id', beatId)
+    .order('created_at', {ascending:true});
+  
+  if(!comments || !comments.length){
+    list.innerHTML='<div style="font-family:var(--vt);font-size:14px;color:rgba(255,255,255,.2);padding:8px 0;letter-spacing:1px;">NO COMMENTS YET — BE FIRST!</div>';
+    return;
+  }
+  list.innerHTML = comments.map(cm=>{
+    const prof = cm.profiles||{};
+    const avatarHtml = prof.avatar_url?`<img src="${esc(prof.avatar_url)}">`:'👤';
+    const canDelete = currentUser && currentUser.id === cm.user_id;
+    return `
+    <div class="comment-item" id="cm-${cm.id}">
+      <div class="comment-avatar">${avatarHtml}</div>
+      <div class="comment-body">
+        <div class="comment-username">${esc(prof.username||'Producer')}</div>
+        <div class="comment-text">${esc(cm.content)}</div>
+        <div class="comment-time">${timeAgo(cm.created_at)}${canDelete?` · <button class="comment-delete" onclick="deleteComment('${cm.id}','${beatId}')">delete</button>`:''}</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  // update comment count
+  const countEl = document.getElementById('ccount-'+beatId);
+  if(countEl) countEl.textContent = comments.length > 0 ? `(${comments.length})` : '';
+}
+
+async function postComment(beatId){
+  if(!currentUser){showToast('LOGIN TO COMMENT');return;}
+  const input = document.getElementById('cinput-'+beatId);
+  const content = input.value.trim();
+  if(!content) return;
+  const {error} = await sb.from('comments').insert({
+    beat_id: beatId,
+    user_id: currentUser.id,
+    content
+  });
+  if(error){showToast('ERROR POSTING COMMENT');return;}
+  input.value = '';
+  await loadComments(beatId);
+  // notify beat owner
+  const {data:beat} = await sb.from('beats').select('user_id,title').eq('id',beatId).single();
+  if(beat && beat.user_id !== currentUser.id){
+    await createNotification(beat.user_id, 'comment', `💬 ${currentProfile.username} commented on your beat "${beat.title}"`, 'home');
+  }
+}
+
+async function deleteComment(commentId, beatId){
+  await sb.from('comments').delete().eq('id', commentId);
+  await loadComments(beatId);
+}
 
 // drag drop upload
 const drop=document.getElementById('upload-drop');
