@@ -157,6 +157,24 @@ body{background:var(--dark);font-family:var(--px);color:#fff;min-height:100vh;ov
 #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:9000;background:var(--g);color:#000;font-family:var(--px);font-size:7px;padding:10px 20px;border-radius:7px;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap;}
 #toast.show{opacity:1;}
 
+.battle-card{background:linear-gradient(145deg,rgba(10,0,25,.92),rgba(0,4,18,.96));border:2px solid rgba(255,48,48,.3);border-radius:14px;overflow:hidden;margin-bottom:16px;transition:border-color .2s;}
+.battle-card:hover{border-color:var(--r);}
+.battle-card.active{border-color:var(--y);animation:battlePulse 2s ease-in-out infinite;}
+@keyframes battlePulse{0%,100%{box-shadow:0 0 10px rgba(255,232,26,.2);}50%{box-shadow:0 0 30px rgba(255,232,26,.4);}}
+.battle-top{display:flex;align-items:center;padding:16px;gap:12px;}
+.battle-vs{font-family:var(--px);font-size:14px;color:var(--r);text-shadow:0 0 10px var(--r);flex-shrink:0;}
+.battle-producer{flex:1;text-align:center;}
+.battle-prod-name{font-family:var(--fr);font-size:15px;color:#fff;margin-bottom:3px;}
+.battle-beat-name{font-family:var(--vt);font-size:14px;color:rgba(255,255,255,.45);letter-spacing:1px;}
+.battle-votes{font-family:var(--px);font-size:11px;margin-top:4px;}
+.battle-bar{height:8px;background:rgba(255,255,255,.08);position:relative;overflow:hidden;}
+.battle-bar-fill{height:100%;background:linear-gradient(90deg,var(--r),var(--y));transition:width .5s ease;}
+.battle-controls{padding:12px 16px;border-top:1px solid rgba(255,255,255,.06);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;}
+.battle-timer{font-family:var(--vt);font-size:16px;color:rgba(255,232,26,.6);letter-spacing:1px;}
+.battle-status{font-family:var(--px);font-size:6px;padding:3px 8px;border-radius:4px;}
+.battle-status.active{background:rgba(57,255,20,.15);color:var(--g);border:1px solid var(--g);}
+.battle-status.pending{background:rgba(255,232,26,.15);color:var(--y);border:1px solid var(--y);}
+.battle-status.completed{background:rgba(255,255,255,.08);color:rgba(255,255,255,.4);border:1px solid rgba(255,255,255,.1);}
 @media(max-width:600px){
   .fc-cover{width:80px;min-width:80px;height:80px;}
   .profile-header{flex-direction:column;align-items:center;text-align:center;}
@@ -216,6 +234,7 @@ body{background:var(--dark);font-family:var(--px);color:#fff;min-height:100vh;ov
   <div class="nav-logo">⚔️ BEAT WARS</div>
   <div class="nav-right">
     <button class="nav-btn" onclick="showScreen('home')">FEED</button>
+    <button class="nav-btn" onclick="showScreen('battles')">⚔️ BATTLES</button>
     <button class="nav-btn" onclick="showScreen('leaderboard')">RANKS</button>
     <button class="nav-btn primary" onclick="showScreen('upload')">+ UPLOAD</button>
     <div id="nav-user" style="display:none;" onclick="showScreen('profile')">
@@ -315,6 +334,65 @@ body{background:var(--dark);font-family:var(--px);color:#fff;min-height:100vh;ov
   <div class="leaderboard">
     <div style="font-family:var(--px);font-size:12px;color:var(--y);text-align:center;margin-bottom:24px;text-shadow:0 0 10px var(--y);">GALACTIC RANKINGS</div>
     <div id="lb-list"><div class="loading">LOADING RANKINGS...</div></div>
+  </div>
+</div>
+
+<!-- BATTLES SCREEN -->
+<div id="battles-screen" class="screen">
+  <div style="width:100%;max-width:900px;padding:28px 24px 16px;">
+    <div style="font-family:var(--px);font-size:clamp(10px,2.5vw,18px);color:var(--y);text-shadow:0 0 10px var(--y);text-align:center;margin-bottom:6px;">⚔️ BATTLE ARENA ⚔️</div>
+    <div style="font-family:var(--vt);font-size:18px;color:rgba(255,255,255,.35);letter-spacing:3px;text-align:center;margin-bottom:20px;">CHALLENGE · VOTE · DOMINATE</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;">
+      <button class="feed-tab active" onclick="setBattleTab('active',this)">ACTIVE</button>
+      <button class="feed-tab" onclick="setBattleTab('pending',this)">PENDING</button>
+      <button class="feed-tab" onclick="setBattleTab('completed',this)">COMPLETED</button>
+      <button class="feed-tab" onclick="setBattleTab('mine',this)">MY BATTLES</button>
+    </div>
+    <button class="nav-btn primary" onclick="openChallengePicker()" style="margin-bottom:20px;">⚔️ START A BATTLE</button>
+    <div id="battles-list"><div class="loading">LOADING BATTLES...</div></div>
+  </div>
+</div>
+
+<!-- CHALLENGE MODAL -->
+<div id="challenge-modal" class="modal">
+  <div class="modal-box">
+    <div class="modal-title">⚔️ START A BATTLE</div>
+    <div class="field">
+      <label>PICK YOUR BEAT</label>
+      <select id="ch-my-beat" style="width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.15);color:#fff;padding:11px 14px;font-family:var(--vt);font-size:18px;outline:none;border-radius:7px;">
+        <option value="">loading your beats...</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>CHALLENGE PRODUCER</label>
+      <select id="ch-opponent" style="width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.15);color:#fff;padding:11px 14px;font-family:var(--vt);font-size:18px;outline:none;border-radius:7px;">
+        <option value="">loading producers...</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>BATTLE MODE</label>
+      <select id="ch-mode" style="width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.15);color:#fff;padding:11px 14px;font-family:var(--vt);font-size:18px;outline:none;border-radius:7px;">
+        <option value="casual">CASUAL</option>
+        <option value="ranked">RANKED</option>
+      </select>
+    </div>
+    <div class="modal-msg" id="ch-msg"></div>
+    <div class="modal-actions">
+      <button class="m-btn m-btn-primary" onclick="sendChallenge()">SEND CHALLENGE ⚔️</button>
+      <button class="m-btn m-btn-cancel" onclick="closeModal('challenge-modal')">CANCEL</button>
+    </div>
+  </div>
+</div>
+
+<!-- BATTLE VOTE MODAL -->
+<div id="battle-vote-modal" class="modal">
+  <div class="modal-box" style="max-width:500px;">
+    <div class="modal-title">⚔️ CAST YOUR VOTE</div>
+    <div id="bv-content"></div>
+    <div class="modal-msg" id="bv-msg"></div>
+    <div class="modal-actions">
+      <button class="m-btn m-btn-cancel" onclick="closeModal('battle-vote-modal')">CLOSE</button>
+    </div>
   </div>
 </div>
 
@@ -743,6 +821,7 @@ function showScreen(name){
   if(name==='home')loadFeed();
   if(name==='profile')renderProfile();
   if(name==='leaderboard')loadLeaderboard();
+  if(name==='battles')loadBattles();
 }
 
 // ══════════════════════════════════════════
@@ -751,6 +830,193 @@ function showScreen(name){
 function fmt(s){if(!s||isNaN(s))return'0:00';return`${Math.floor(s/60)}:${Math.floor(s%60).toString().padStart(2,'0')}`;}
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
+
+// ══════════════════════════════════════════
+// BATTLES
+// ══════════════════════════════════════════
+let battleTab='active';
+
+function setBattleTab(tab,el){
+  battleTab=tab;
+  document.querySelectorAll('#battles-screen .feed-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  loadBattles();
+}
+
+async function loadBattles(){
+  const list=document.getElementById('battles-list');
+  list.innerHTML='<div class="loading">LOADING...</div>';
+  let query=sb.from('battles').select('*').order('created_at',{ascending:false});
+  if(battleTab==='active')query=query.eq('status','active');
+  if(battleTab==='pending')query=query.eq('status','pending');
+  if(battleTab==='completed')query=query.eq('status','completed');
+  if(battleTab==='mine'&&currentUser)query=query.or(`challenger_id.eq.${currentUser.id},opponent_id.eq.${currentUser.id}`);
+  const {data:battles,error}=await query;
+  if(error||!battles||!battles.length){list.innerHTML='<div class="empty">NO BATTLES HERE YET — START ONE!</div>';return;}
+  // load profiles and beats
+  const userIds=[...new Set([...battles.map(b=>b.challenger_id),...battles.map(b=>b.opponent_id)].filter(Boolean))];
+  const beatIds=[...new Set([...battles.map(b=>b.challenger_beat_id),...battles.map(b=>b.opponent_beat_id)].filter(Boolean))];
+  let profMap={},beatMap={};
+  if(userIds.length){const {data:profs}=await sb.from('profiles').select('id,username,avatar_url,rank').in('id',userIds);if(profs)profs.forEach(p=>profMap[p.id]=p);}
+  if(beatIds.length){const {data:beats}=await sb.from('beats').select('id,title,audio_url').in('id',beatIds);if(beats)beats.forEach(b=>beatMap[b.id]=b);}
+  list.innerHTML=battles.map(b=>battleCardHTML(b,profMap,beatMap)).join('');
+  // start timers
+  battles.filter(b=>b.status==='active'&&b.ends_at).forEach(b=>startBattleTimer(b.id,b.ends_at));
+}
+
+function battleCardHTML(b,profMap,beatMap){
+  const challenger=profMap[b.challenger_id]||{username:'Producer'};
+  const opponent=profMap[b.opponent_id]||{username:'Producer'};
+  const cBeat=beatMap[b.challenger_beat_id]||{title:'No beat selected'};
+  const oBeat=beatMap[b.opponent_beat_id]||{title:'No beat selected'};
+  const totalVotes=(b.challenger_votes||0)+(b.opponent_votes||0);
+  const cPct=totalVotes>0?Math.round((b.challenger_votes||0)/totalVotes*100):50;
+  const oPct=100-cPct;
+  const isActive=b.status==='active';
+  const isPending=b.status==='pending';
+  const isCompleted=b.status==='completed';
+  const winnerName=b.winner_id?(b.winner_id===b.challenger_id?challenger.username:opponent.username):'TIE';
+  return `
+  <div class="battle-card ${b.status}" id="battle-${b.id}">
+    <div class="battle-top">
+      <div class="battle-producer">
+        <div class="battle-prod-name">${esc(challenger.username)}</div>
+        <div class="battle-beat-name">${esc(cBeat.title)}</div>
+        ${isActive||isCompleted?`<div class="battle-votes" style="color:var(--c);">${b.challenger_votes||0} votes (${cPct}%)</div>`:''}
+        ${isActive&&cBeat.audio_url?`<button class="vote-btn" style="margin-top:6px;font-size:6px;" onclick="togglePlay('c-${b.id}','${esc(cBeat.audio_url)}',this)">▶ PLAY</button>`:''}
+      </div>
+      <div class="battle-vs">VS</div>
+      <div class="battle-producer">
+        <div class="battle-prod-name">${esc(opponent.username)}</div>
+        <div class="battle-beat-name">${isPending&&!b.opponent_beat_id?'⏳ AWAITING RESPONSE':esc(oBeat.title)}</div>
+        ${isActive||isCompleted?`<div class="battle-votes" style="color:var(--p);">${b.opponent_votes||0} votes (${oPct}%)</div>`:''}
+        ${isActive&&oBeat.audio_url?`<button class="vote-btn" style="margin-top:6px;font-size:6px;" onclick="togglePlay('o-${b.id}','${esc(oBeat.audio_url)}',this)">▶ PLAY</button>`:''}
+      </div>
+    </div>
+    ${isActive?`<div class="battle-bar"><div class="battle-bar-fill" style="width:${cPct}%"></div></div>`:''}
+    <div class="battle-controls">
+      <span class="battle-status ${b.status}">${b.status.toUpperCase()}</span>
+      ${isActive?`<span class="battle-timer" id="timer-${b.id}">...</span>`:''}
+      ${isCompleted?`<span style="font-family:var(--px);font-size:7px;color:var(--y);">WINNER: ${esc(winnerName)}</span>`:''}
+      ${isPending&&b.opponent_id===currentUser?.id?`<button class="nav-btn primary" style="font-size:6px;padding:6px 12px;" onclick="acceptBattle('${b.id}')">ACCEPT ⚔️</button>`:''}
+      ${isActive?`<button class="vote-btn" onclick="openBattleVote('${b.id}','${esc(challenger.username)}','${esc(opponent.username)}')">⭐ VOTE</button>`:''}
+    </div>
+  </div>`;
+}
+
+function startBattleTimer(battleId,endsAt){
+  const el=document.getElementById(`timer-${battleId}`);
+  if(!el)return;
+  function tick(){
+    const diff=new Date(endsAt)-new Date();
+    if(diff<=0){el.textContent='ENDING...';return;}
+    const h=Math.floor(diff/3600000);
+    const m=Math.floor((diff%3600000)/60000);
+    const s=Math.floor((diff%60000)/1000);
+    el.textContent=`${h}h ${m}m ${s}s LEFT`;
+    setTimeout(tick,1000);
+  }
+  tick();
+}
+
+async function openChallengePicker(){
+  if(!currentUser){showToast('LOGIN FIRST');return;}
+  const chMsg=document.getElementById('ch-msg');
+  chMsg.textContent='';
+  // load my beats
+  const {data:myBeats}=await sb.from('beats').select('id,title').eq('user_id',currentUser.id);
+  const beatSel=document.getElementById('ch-my-beat');
+  if(!myBeats||!myBeats.length){beatSel.innerHTML='<option value="">No beats uploaded yet</option>';}
+  else{beatSel.innerHTML=myBeats.map(b=>`<option value="${b.id}">${esc(b.title)}</option>`).join('');}
+  // load other producers
+  const {data:prods}=await sb.from('profiles').select('id,username').neq('id',currentUser.id);
+  const prodSel=document.getElementById('ch-opponent');
+  if(!prods||!prods.length){prodSel.innerHTML='<option value="">No other producers yet</option>';}
+  else{prodSel.innerHTML=prods.map(p=>`<option value="${p.id}">${esc(p.username)}</option>`).join('');}
+  openModal('challenge-modal');
+}
+
+async function sendChallenge(){
+  const myBeatId=document.getElementById('ch-my-beat').value;
+  const opponentId=document.getElementById('ch-opponent').value;
+  const mode=document.getElementById('ch-mode').value;
+  const msg=document.getElementById('ch-msg');
+  if(!myBeatId){msg.textContent='PICK A BEAT FIRST';msg.style.color='var(--r)';return;}
+  if(!opponentId){msg.textContent='PICK AN OPPONENT';msg.style.color='var(--r)';return;}
+  msg.textContent='SENDING CHALLENGE...';msg.style.color='var(--y)';
+  const endsAt=new Date(Date.now()+48*60*60*1000).toISOString();
+  const {error}=await sb.from('battles').insert({
+    challenger_id:currentUser.id,
+    opponent_id:opponentId,
+    challenger_beat_id:myBeatId,
+    status:'pending',
+    mode,
+    ends_at:endsAt
+  });
+  if(error){msg.textContent='ERROR: '+error.message;msg.style.color='var(--r)';return;}
+  msg.textContent='CHALLENGE SENT! ⚔️';msg.style.color='var(--g)';
+  setTimeout(()=>{closeModal('challenge-modal');loadBattles();},1000);
+}
+
+async function acceptBattle(battleId){
+  if(!currentUser)return;
+  // pick a beat to use
+  const {data:myBeats}=await sb.from('beats').select('id,title').eq('user_id',currentUser.id);
+  if(!myBeats||!myBeats.length){showToast('UPLOAD A BEAT FIRST');return;}
+  // for now use their most recent beat — we'll add a picker later
+  const beat=myBeats[0];
+  const {error}=await sb.from('battles').update({
+    opponent_beat_id:beat.id,
+    status:'active'
+  }).eq('id',battleId);
+  if(error){showToast('ERROR: '+error.message);return;}
+  showToast('BATTLE ACCEPTED! ⚔️');
+  loadBattles();
+}
+
+async function openBattleVote(battleId,challengerName,opponentName){
+  if(!currentUser){showToast('LOGIN TO VOTE');return;}
+  const content=document.getElementById('bv-content');
+  const msg=document.getElementById('bv-msg');
+  msg.textContent='';
+  content.innerHTML=`
+    <div style="font-family:var(--vt);font-size:16px;color:rgba(255,255,255,.5);margin-bottom:16px;letter-spacing:1px;">WHO WON THIS BATTLE?</div>
+    <div style="display:flex;gap:10px;">
+      <button class="m-btn m-btn-primary" style="flex:1;" onclick="castBattleVote('${battleId}','challenger','${challengerName}','${opponentName}')">
+        ${esc(challengerName)}
+      </button>
+      <button class="m-btn" style="flex:1;background:rgba(255,0,255,.15);color:var(--p);border-color:var(--p);" onclick="castBattleVote('${battleId}','opponent','${challengerName}','${opponentName}')">
+        ${esc(opponentName)}
+      </button>
+    </div>`;
+  openModal('battle-vote-modal');
+}
+
+async function castBattleVote(battleId,side,challengerName,opponentName){
+  const msg=document.getElementById('bv-msg');
+  msg.textContent='SUBMITTING...';msg.style.color='var(--y)';
+  // check existing vote
+  const {data:existing}=await sb.from('votes').select('id').eq('beat_id',battleId).eq('voter_id',currentUser.id).maybeSingle();
+  if(existing){msg.textContent='ALREADY VOTED!';msg.style.color='var(--r)';return;}
+  // get current battle
+  const {data:battle}=await sb.from('battles').select('*').eq('id',battleId).single();
+  if(!battle)return;
+  const update=side==='challenger'
+    ?{challenger_votes:(battle.challenger_votes||0)+1}
+    :{opponent_votes:(battle.opponent_votes||0)+1};
+  await sb.from('battles').update(update).eq('id',battleId);
+  // store vote record using beat_id field for battle tracking
+  await sb.from('votes').insert({beat_id:battleId,voter_id:currentUser.id,value:side==='challenger'?1:2});
+  // update voter points
+  await sb.from('profiles').update({
+    votes_cast:(currentProfile.votes_cast||0)+1,
+    rank_points:(currentProfile.rank_points||0)+1
+  }).eq('id',currentUser.id);
+  currentProfile.votes_cast=(currentProfile.votes_cast||0)+1;
+  msg.textContent=`VOTED FOR ${side==='challenger'?challengerName:opponentName}! ⚔️`;
+  msg.style.color='var(--g)';
+  setTimeout(()=>{closeModal('battle-vote-modal');loadBattles();},1000);
+}
 
 // drag drop upload
 const drop=document.getElementById('upload-drop');
