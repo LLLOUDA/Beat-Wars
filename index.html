@@ -843,9 +843,19 @@ async function submitVote(){
   const avg=Math.round(total/4);
   await sb.from('votes').insert({beat_id:voteTarget,voter_id:currentUser.id,value:avg,...voteRatings});
   await sb.from('beats').update({votes_up:avg}).eq('id',voteTarget);
-  await sb.from('profiles').update({votes_cast:(currentProfile.votes_cast||0)+1,rank_points:(currentProfile.rank_points||0)+avg}).eq('id',currentUser.id);
+  // voter gets +1 point
+  await sb.from('profiles').update({
+    votes_cast:(currentProfile.votes_cast||0)+1,
+    rank_points:(currentProfile.rank_points||0)+1
+  }).eq('id',currentUser.id);
   currentProfile.votes_cast=(currentProfile.votes_cast||0)+1;
-  currentProfile.rank_points=(currentProfile.rank_points||0)+avg;
+  currentProfile.rank_points=(currentProfile.rank_points||0)+1;
+  // beat owner gets +3 points
+  const {data:beatOwner}=await sb.from('beats').select('user_id').eq('id',voteTarget).single();
+  if(beatOwner && beatOwner.user_id !== currentUser.id){
+    const {data:ownerProf}=await sb.from('profiles').select('rank_points').eq('id',beatOwner.user_id).single();
+    if(ownerProf) await sb.from('profiles').update({rank_points:(ownerProf.rank_points||0)+3}).eq('id',beatOwner.user_id);
+  }
   msg.textContent='VOTE SUBMITTED! ⭐';msg.style.color='var(--g)';
   setTimeout(()=>{closeModal('vote-modal');loadFeed();},900);
 }
@@ -929,8 +939,33 @@ async function loadBattles(){
   if(userIds.length){const {data:profs}=await sb.from('profiles').select('id,username,avatar_url,rank').in('id',userIds);if(profs)profs.forEach(p=>profMap[p.id]=p);}
   if(beatIds.length){const {data:beats}=await sb.from('beats').select('id,title,audio_url').in('id',beatIds);if(beats)beats.forEach(b=>beatMap[b.id]=b);}
   list.innerHTML=battles.map(b=>battleCardHTML(b,profMap,beatMap)).join('');
-  // start timers
-  battles.filter(b=>b.status==='active'&&b.ends_at).forEach(b=>startBattleTimer(b.id,b.ends_at));
+  // start timers and check for ended battles
+  battles.filter(b=>b.status==='active'&&b.ends_at).forEach(b=>{
+    startBattleTimer(b.id,b.ends_at);
+    // check if battle should be resolved
+    if(new Date(b.ends_at) < new Date()) resolveBattle(b);
+  });
+}
+
+async function resolveBattle(battle){
+  if(battle.status !== 'active') return;
+  const cVotes = battle.challenger_votes||0;
+  const oVotes = battle.opponent_votes||0;
+  if(cVotes === oVotes && cVotes === 0) return; // no votes yet
+  const winnerId = cVotes >= oVotes ? battle.challenger_id : battle.opponent_id;
+  const loserId = cVotes >= oVotes ? battle.opponent_id : battle.challenger_id;
+  // update battle status
+  await sb.from('battles').update({status:'completed',winner_id:winnerId}).eq('id',battle.id);
+  // update winner: +15 points, +1 win
+  const {data:winnerProf}=await sb.from('profiles').select('rank_points,wins').eq('id',winnerId).single();
+  if(winnerProf) await sb.from('profiles').update({rank_points:(winnerProf.rank_points||0)+15,wins:(winnerProf.wins||0)+1}).eq('id',winnerId);
+  // update loser: -5 points, +1 loss
+  const {data:loserProf}=await sb.from('profiles').select('rank_points,losses').eq('id',loserId).single();
+  if(loserProf) await sb.from('profiles').update({rank_points:Math.max(0,(loserProf.rank_points||0)-5),losses:(loserProf.losses||0)+1}).eq('id',loserId);
+  // notify both
+  await createNotification(winnerId,'battle',`🏆 You WON your battle! +15 points added to your rank.`,'battles');
+  await createNotification(loserId,'battle',`⚔️ You lost your battle. Keep grinding! -5 points.`,'battles');
+  loadBattles();
 }
 
 function battleCardHTML(b,profMap,beatMap){
@@ -1089,14 +1124,23 @@ async function castBattleVote(battleId,side,challengerName,opponentName){
     ?{challenger_votes:(battle.challenger_votes||0)+1}
     :{opponent_votes:(battle.opponent_votes||0)+1};
   await sb.from('battles').update(update).eq('id',battleId);
-  // store vote record using beat_id field for battle tracking
+  // store vote record
   await sb.from('votes').insert({beat_id:battleId,voter_id:currentUser.id,value:side==='challenger'?1:2});
-  // update voter points
+  // voter gets +1 point
   await sb.from('profiles').update({
     votes_cast:(currentProfile.votes_cast||0)+1,
     rank_points:(currentProfile.rank_points||0)+1
   }).eq('id',currentUser.id);
   currentProfile.votes_cast=(currentProfile.votes_cast||0)+1;
+  // get updated battle to check if someone is dominating
+  const {data:updatedBattle}=await sb.from('battles').select('*').eq('id',battleId).single();
+  if(updatedBattle){
+    // award +2 points to currently leading producer
+    const leaderId = (updatedBattle.challenger_votes||0) >= (updatedBattle.opponent_votes||0)
+      ? updatedBattle.challenger_id : updatedBattle.opponent_id;
+    const {data:leaderProf}=await sb.from('profiles').select('rank_points').eq('id',leaderId).single();
+    if(leaderProf) await sb.from('profiles').update({rank_points:(leaderProf.rank_points||0)+2}).eq('id',leaderId);
+  }
   msg.textContent=`VOTED FOR ${side==='challenger'?challengerName:opponentName}! ⚔️`;
   msg.style.color='var(--g)';
   setTimeout(()=>{closeModal('battle-vote-modal');loadBattles();},1000);
