@@ -242,6 +242,29 @@ select option{background:#0a0020;color:#fff;}
 .share-option{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:6px;cursor:pointer;transition:background .15s;font-family:var(--vt);font-size:16px;color:#fff;letter-spacing:.5px;white-space:nowrap;}
 .share-option:hover{background:rgba(255,232,26,.08);}
 .share-wrap{position:relative;}
+/* TOURNAMENTS */
+.tournament-card{background:linear-gradient(145deg,rgba(10,0,25,.92),rgba(0,4,18,.96));border:2px solid rgba(255,0,255,.3);border-radius:14px;padding:20px;margin-bottom:16px;transition:border-color .2s,transform .2s;}
+.tournament-card:hover{border-color:var(--p);transform:translateY(-2px);}
+.tournament-card.active{border-color:var(--y);box-shadow:0 0 20px rgba(255,232,26,.2);}
+.t-name{font-family:var(--px);font-size:11px;color:var(--y);margin-bottom:8px;}
+.t-info{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:12px;}
+.t-stat{font-family:var(--vt);font-size:15px;color:rgba(255,255,255,.5);letter-spacing:.5px;}
+.t-stat span{color:#fff;}
+.t-actions{display:flex;gap:8px;flex-wrap:wrap;}
+.bracket-wrap{margin-top:16px;}
+.round-title{font-family:var(--px);font-size:7px;color:var(--p);letter-spacing:2px;margin-bottom:10px;margin-top:16px;}
+.match-card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:12px;margin-bottom:8px;}
+.match-card.active{border-color:rgba(255,232,26,.3);}
+.match-producers{display:flex;align-items:center;gap:10px;}
+.match-side{flex:1;text-align:center;}
+.match-prod-name{font-family:var(--fr);font-size:14px;color:#fff;margin-bottom:3px;}
+.match-beat-name{font-family:var(--vt);font-size:12px;color:rgba(255,255,255,.4);}
+.match-votes{font-family:var(--px);font-size:8px;margin-top:4px;}
+.match-vs{font-family:var(--px);font-size:10px;color:var(--r);flex-shrink:0;}
+.match-bar{height:6px;background:rgba(255,255,255,.06);border-radius:3px;margin-top:8px;overflow:hidden;}
+.match-bar-fill{height:100%;background:linear-gradient(90deg,var(--p),var(--y));transition:width .5s;}
+.match-winner{font-family:var(--px);font-size:7px;color:var(--g);text-align:center;margin-top:6px;letter-spacing:1px;}
+.trophy{font-size:20px;}
 @media(max-width:600px){
   .fc-cover{width:80px;min-width:80px;height:80px;}
   .profile-header{flex-direction:column;align-items:center;text-align:center;}
@@ -302,6 +325,7 @@ select option{background:#0a0020;color:#fff;}
   <div class="nav-right">
     <button class="nav-btn" onclick="showScreen('home')">FEED</button>
     <button class="nav-btn" onclick="showScreen('battles')">⚔️ BATTLES</button>
+    <button class="nav-btn" onclick="showScreen('tournaments')">🏆 CUPS</button>
     <button class="nav-btn" onclick="showScreen('leaderboard')">RANKS</button>
     <button class="nav-btn" onclick="showScreen('search')">🔍</button>
     <button class="nav-btn primary" onclick="showScreen('upload')">+ UPLOAD</button>
@@ -505,6 +529,39 @@ select option{background:#0a0020;color:#fff;}
   </div>
   <div class="search-results" id="search-results">
     <div class="empty">START TYPING TO SEARCH...</div>
+  </div>
+</div>
+
+<!-- TOURNAMENTS SCREEN -->
+<div id="tournaments-screen" class="screen">
+  <div style="width:100%;max-width:800px;padding:28px 24px 16px;">
+    <div style="font-family:var(--px);font-size:clamp(10px,2.5vw,18px);color:var(--y);text-shadow:0 0 10px var(--y);text-align:center;margin-bottom:6px;">🏆 TOURNAMENTS 🏆</div>
+    <div style="font-family:var(--vt);font-size:18px;color:rgba(255,255,255,.35);letter-spacing:3px;text-align:center;margin-bottom:20px;">ENTER · BATTLE · WIN</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;">
+      <button class="feed-tab active" onclick="setTourneyTab('active',this)">ACTIVE</button>
+      <button class="feed-tab" onclick="setTourneyTab('upcoming',this)">UPCOMING</button>
+      <button class="feed-tab" onclick="setTourneyTab('completed',this)">COMPLETED</button>
+    </div>
+    <div id="tourney-list"><div class="loading">LOADING...</div></div>
+  </div>
+</div>
+
+<!-- ENTER TOURNAMENT MODAL -->
+<div id="enter-tourney-modal" class="modal">
+  <div class="modal-box">
+    <div class="modal-title">🏆 ENTER TOURNAMENT</div>
+    <div style="font-family:var(--fr);font-size:16px;color:#fff;margin-bottom:16px;opacity:.7;" id="enter-tourney-name"></div>
+    <div class="field">
+      <label>PICK YOUR BEAT</label>
+      <select id="tourney-beat-select" style="width:100%;background:#0a0020;border:1px solid rgba(255,255,255,.15);color:#fff;padding:11px 14px;font-family:var(--vt);font-size:18px;outline:none;border-radius:7px;">
+        <option value="">loading...</option>
+      </select>
+    </div>
+    <div class="modal-msg" id="enter-tourney-msg"></div>
+    <div class="modal-actions">
+      <button class="m-btn m-btn-primary" onclick="confirmEnterTourney()">ENTER ⚔️</button>
+      <button class="m-btn m-btn-cancel" onclick="closeModal('enter-tourney-modal')">CANCEL</button>
+    </div>
   </div>
 </div>
 
@@ -966,6 +1023,7 @@ function showScreen(name){
   if(name==='battles')loadBattles();
   // producer screen loaded separately via viewProducer()
   if(name==='search'){ setTimeout(()=>document.getElementById('main-search').focus(),100); }
+  if(name==='tournaments') loadTournaments();
 }
 
 // ══════════════════════════════════════════
@@ -1592,6 +1650,195 @@ function shareToDiscord(beatId, title, username){
     showToast('DISCORD MESSAGE COPIED! 💬');
   });
   if(openShareMenu){ openShareMenu.classList.remove('open'); openShareMenu=null; }
+}
+
+// ══════════════════════════════════════════
+// TOURNAMENTS
+// ══════════════════════════════════════════
+let tourneyTab = 'active';
+let enteringTourneyId = null;
+
+function setTourneyTab(tab, el){
+  tourneyTab = tab;
+  document.querySelectorAll('#tournaments-screen .feed-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  loadTournaments();
+}
+
+async function loadTournaments(){
+  const list = document.getElementById('tourney-list');
+  list.innerHTML = '<div class="loading">LOADING...</div>';
+  const {data:tourneys, error} = await sb.from('tournaments')
+    .select('*')
+    .eq('status', tourneyTab)
+    .order('created_at', {ascending:false});
+  if(error||!tourneys||!tourneys.length){
+    list.innerHTML = '<div class="empty">NO TOURNAMENTS YET</div>';
+    // show create button for now so you can seed one
+    if(currentUser) list.innerHTML += `<div style="text-align:center;margin-top:20px;"><button class="nav-btn primary" onclick="createTestTournament()">+ CREATE TOURNAMENT</button></div>`;
+    return;
+  }
+  list.innerHTML = tourneys.map(t=>tournamentCardHTML(t)).join('');
+}
+
+function tournamentCardHTML(t){
+  const isActive = t.status === 'active';
+  const isUpcoming = t.status === 'upcoming';
+  const isCompleted = t.status === 'completed';
+  return `
+  <div class="tournament-card ${isActive?'active':''}" id="tourney-${t.id}">
+    <div class="t-name">${esc(t.name||'TOURNAMENT')}</div>
+    <div class="t-info">
+      <div class="t-stat">MODE: <span>${(t.mode||'casual').toUpperCase()}</span></div>
+      <div class="t-stat">SPOTS: <span>${t.max_entries||16}</span></div>
+      <div class="t-stat">PRIZE: <span>${t.prize_pool>0?'$'+t.prize_pool:'GLORY + POINTS'}</span></div>
+      ${t.start_date?`<div class="t-stat">STARTS: <span>${new Date(t.start_date).toLocaleDateString()}</span></div>`:''}
+    </div>
+    <div class="t-actions">
+      ${isUpcoming?`<button class="nav-btn primary" onclick="openEnterTourney('${t.id}','${esc(t.name||'Tournament')}')">ENTER TOURNAMENT</button>`:''}
+      ${isActive?`<button class="nav-btn" onclick="viewBracket('${t.id}')">VIEW BRACKET</button>`:''}
+      ${isCompleted&&t.winner_id?`<div style="font-family:var(--px);font-size:8px;color:var(--y);">🏆 WINNER: <span id="twinner-${t.id}">loading...</span></div>`:''}
+    </div>
+    <div class="bracket-wrap" id="bracket-${t.id}" style="display:none;"></div>
+  </div>`;
+}
+
+async function openEnterTourney(tourneyId, tourneyName){
+  if(!currentUser){showToast('LOGIN FIRST');return;}
+  enteringTourneyId = tourneyId;
+  document.getElementById('enter-tourney-name').textContent = tourneyName;
+  const msg = document.getElementById('enter-tourney-msg');
+  msg.textContent = '';
+  // check if already entered
+  const {data:existing} = await sb.from('tournament_entries')
+    .select('id').eq('tournament_id',tourneyId).eq('user_id',currentUser.id).maybeSingle();
+  if(existing){msg.textContent="YOU'RE ALREADY ENTERED!";msg.style.color='var(--g)';
+    openModal('enter-tourney-modal');return;}
+  // load beats
+  const {data:beats} = await sb.from('beats').select('id,title').eq('user_id',currentUser.id);
+  const sel = document.getElementById('tourney-beat-select');
+  if(!beats||!beats.length){
+    sel.innerHTML='<option value="">No beats — upload one first!</option>';
+  } else {
+    sel.innerHTML = beats.map(b=>`<option value="${b.id}">${esc(b.title)}</option>`).join('');
+  }
+  openModal('enter-tourney-modal');
+}
+
+async function confirmEnterTourney(){
+  const beatId = document.getElementById('tourney-beat-select').value;
+  const msg = document.getElementById('enter-tourney-msg');
+  if(!beatId){msg.textContent='PICK A BEAT';msg.style.color='var(--r)';return;}
+  msg.textContent='ENTERING...';msg.style.color='var(--y)';
+  const {error} = await sb.from('tournament_entries').insert({
+    tournament_id: enteringTourneyId,
+    user_id: currentUser.id,
+    beat_id: beatId
+  });
+  if(error){msg.textContent='ERROR: '+error.message;msg.style.color='var(--r)';return;}
+  // notify user
+  await createNotification(currentUser.id,'tournament',`🏆 You entered the tournament! Good luck.`,'tournaments');
+  msg.textContent="YOU'RE IN! GOOD LUCK ⚔️";msg.style.color='var(--g)';
+  setTimeout(()=>{closeModal('enter-tourney-modal');loadTournaments();},1200);
+}
+
+async function viewBracket(tourneyId){
+  const wrap = document.getElementById('bracket-'+tourneyId);
+  if(wrap.style.display==='block'){wrap.style.display='none';return;}
+  wrap.style.display='block';
+  wrap.innerHTML='<div class="loading">LOADING BRACKET...</div>';
+  const {data:matches} = await sb.from('tournament_matches')
+    .select('*').eq('tournament_id',tourneyId).order('round').order('created_at');
+  if(!matches||!matches.length){wrap.innerHTML='<div class="empty">BRACKET NOT SET UP YET</div>';return;}
+  // load entries
+  const entryIds=[...new Set([...matches.map(m=>m.entry1_id),...matches.map(m=>m.entry2_id)].filter(Boolean))];
+  let entryMap={};
+  if(entryIds.length){
+    const {data:entries}=await sb.from('tournament_entries').select('id,user_id,beat_id').in('id',entryIds);
+    if(entries){
+      const userIds=[...new Set(entries.map(e=>e.user_id))];
+      const beatIds=[...new Set(entries.map(e=>e.beat_id))];
+      let profMap={},beatMap={};
+      if(userIds.length){const {data:p}=await sb.from('profiles').select('id,username').in('id',userIds);if(p)p.forEach(x=>profMap[x.id]=x);}
+      if(beatIds.length){const {data:b}=await sb.from('beats').select('id,title').in('id',beatIds);if(b)b.forEach(x=>beatMap[x.id]=x);}
+      entries.forEach(e=>{entryMap[e.id]={...e,username:profMap[e.user_id]?.username||'Producer',beatTitle:beatMap[e.beat_id]?.title||'Untitled'};});
+    }
+  }
+  // group by round
+  const rounds={};
+  matches.forEach(m=>{if(!rounds[m.round])rounds[m.round]=[];rounds[m.round].push(m);});
+  let html='';
+  Object.keys(rounds).sort().forEach(r=>{
+    html+=`<div class="round-title">ROUND ${r}</div>`;
+    rounds[r].forEach(m=>{
+      const e1=entryMap[m.entry1_id]||{username:'TBD',beatTitle:'TBD'};
+      const e2=entryMap[m.entry2_id]||{username:'TBD',beatTitle:'TBD'};
+      const total=(m.entry1_votes||0)+(m.entry2_votes||0);
+      const pct=total>0?Math.round((m.entry1_votes||0)/total*100):50;
+      const isActive=m.status==='active';
+      html+=`
+      <div class="match-card ${isActive?'active':''}">
+        <div class="match-producers">
+          <div class="match-side">
+            <div class="match-prod-name">${esc(e1.username)}</div>
+            <div class="match-beat-name">${esc(e1.beatTitle)}</div>
+            ${isActive||m.status==='completed'?`<div class="match-votes" style="color:var(--c);">${m.entry1_votes||0} votes</div>`:''}
+          </div>
+          <div class="match-vs">VS</div>
+          <div class="match-side">
+            <div class="match-prod-name">${esc(e2.username)}</div>
+            <div class="match-beat-name">${esc(e2.beatTitle)}</div>
+            ${isActive||m.status==='completed'?`<div class="match-votes" style="color:var(--p);">${m.entry2_votes||0} votes</div>`:''}
+          </div>
+        </div>
+        ${isActive?`<div class="match-bar"><div class="match-bar-fill" style="width:${pct}%"></div></div>`:''}
+        ${isActive?`<div style="text-align:center;margin-top:8px;"><button class="vote-btn" onclick="voteTourneyMatch('${m.id}','${m.entry1_id}','${m.entry2_id}','${esc(e1.username)}','${esc(e2.username)}')">⭐ VOTE</button></div>`:''}
+        ${m.status==='completed'&&m.winner_entry_id?`<div class="match-winner">🏆 WINNER: ${esc(m.winner_entry_id===m.entry1_id?e1.username:e2.username)}</div>`:''}
+      </div>`;
+    });
+  });
+  wrap.innerHTML=html;
+}
+
+async function voteTourneyMatch(matchId,e1Id,e2Id,e1Name,e2Name){
+  if(!currentUser){showToast('LOGIN TO VOTE');return;}
+  const content=document.getElementById('bv-content');
+  const msg=document.getElementById('bv-msg');
+  msg.textContent='';
+  content.innerHTML=`
+    <div style="font-family:var(--vt);font-size:16px;color:rgba(255,255,255,.5);margin-bottom:16px;letter-spacing:1px;">WHO WINS THIS ROUND?</div>
+    <div style="display:flex;gap:10px;">
+      <button class="m-btn m-btn-primary" onclick="castTourneyVote('${matchId}','entry1','${esc(e1Name)}')">🎵 ${esc(e1Name)}</button>
+      <button class="m-btn" style="flex:1;background:rgba(255,0,255,.15);color:var(--p);border-color:var(--p);" onclick="castTourneyVote('${matchId}','entry2','${esc(e2Name)}')">🎵 ${esc(e2Name)}</button>
+    </div>`;
+  openModal('battle-vote-modal');
+}
+
+async function castTourneyVote(matchId,side,winnerName){
+  const msg=document.getElementById('bv-msg');
+  msg.textContent='SUBMITTING...';msg.style.color='var(--y)';
+  const {data:match}=await sb.from('tournament_matches').select('*').eq('id',matchId).single();
+  if(!match)return;
+  const update=side==='entry1'?{entry1_votes:(match.entry1_votes||0)+1}:{entry2_votes:(match.entry2_votes||0)+1};
+  await sb.from('tournament_matches').update(update).eq('id',matchId);
+  await sb.from('profiles').update({votes_cast:(currentProfile.votes_cast||0)+1,rank_points:(currentProfile.rank_points||0)+1}).eq('id',currentUser.id);
+  currentProfile.votes_cast=(currentProfile.votes_cast||0)+1;
+  msg.textContent=`VOTED FOR ${esc(winnerName)}! 🏆`;msg.style.color='var(--g)';
+  setTimeout(()=>{closeModal('battle-vote-modal');loadTournaments();},900);
+}
+
+// Create a test tournament (for you to seed the first one)
+async function createTestTournament(){
+  const name = prompt('Tournament name:','BEAT WARS CUP #1');
+  if(!name) return;
+  const {error}=await sb.from('tournaments').insert({
+    name,status:'upcoming',mode:'casual',
+    max_entries:8,prize_pool:0,
+    start_date:new Date(Date.now()+24*60*60*1000).toISOString()
+  });
+  if(error){showToast('ERROR: '+error.message);return;}
+  showToast('TOURNAMENT CREATED!');
+  loadTournaments();
 }
 
 // drag drop upload
