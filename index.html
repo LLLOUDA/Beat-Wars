@@ -923,6 +923,7 @@ function feedCardHTML(b,prof){
       <div class="fc-cover">${coverHtml}</div>
       <div class="fc-info">
         <div class="fc-title">${esc(b.title||'Untitled')}</div>
+        <div data-plays style="font-family:var(--vt);font-size:13px;color:rgba(255,255,255,.25);letter-spacing:1px;margin-bottom:4px;">▶ ${b.play_count||0} plays</div>
         <div class="fc-producer" onclick="viewProducer('${b.user_id}')" style="cursor:pointer;" title="View ${esc(username)}'s profile">
           <div class="fc-avatar">${avatarHtml}</div>
           <span class="fc-username" style="text-decoration:underline;text-decoration-color:rgba(255,255,255,.2);">${esc(username)}</span>
@@ -987,6 +988,8 @@ function togglePlay(id,url,btn){
   currentAudio.play().catch(()=>showToast('COULD NOT PLAY AUDIO'));
   btn.textContent='⏸';
   document.getElementById(`card-${id}`)?.classList.add('playing');
+  // increment play count
+  incrementPlayCount(id);
   currentAudio.addEventListener('timeupdate',()=>{
     if(!currentAudio.duration)return;
     const pct=(currentAudio.currentTime/currentAudio.duration)*100;
@@ -1680,6 +1683,27 @@ async function doSearch(query){
 
   if(!html) html = `<div class="empty">NO RESULTS FOR "${esc(query)}"</div>`;
   results.innerHTML = html;
+}
+
+// ══════════════════════════════════════════
+// PLAY COUNT
+// ══════════════════════════════════════════
+const playedThisSession = new Set(); // don't double count in same session
+
+async function incrementPlayCount(beatId){
+  if(playedThisSession.has(beatId)) return;
+  playedThisSession.add(beatId);
+  // update in DB
+  const {data:beat} = await sb.from('beats').select('play_count').eq('id',beatId).single();
+  if(beat){
+    await sb.from('beats').update({play_count:(beat.play_count||0)+1}).eq('id',beatId);
+    // update display
+    const card = document.getElementById('card-'+beatId);
+    if(card){
+      const playEl = card.querySelector('[data-plays]');
+      if(playEl) playEl.textContent = '▶ '+((beat.play_count||0)+1)+' plays';
+    }
+  }
 }
 
 // ══════════════════════════════════════════
