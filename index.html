@@ -935,6 +935,7 @@ function feedCardHTML(b,prof){
           ${b.genre?`<span class="fc-tag genre">${esc(b.genre)}</span>`:''}
           <span class="fc-tag" style="color:${b.battle_mode==='ranked'?'var(--y)':'var(--c)'}">${b.battle_mode==='ranked'?'RANKED':'CASUAL'}</span>
         </div>
+        ${b.description?`<div style="font-family:var(--vt);font-size:14px;color:rgba(255,255,255,.4);margin-top:6px;letter-spacing:.5px;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${esc(b.description)}</div>`:''}
       </div>
     </div>
     <div class="fc-controls">
