@@ -314,6 +314,44 @@ select option{background:#0a0020;color:#fff;}
 .match-bar-fill{height:100%;background:linear-gradient(90deg,var(--p),var(--y));transition:width .5s;}
 .match-winner{font-family:var(--px);font-size:7px;color:var(--g);text-align:center;margin-top:6px;letter-spacing:1px;}
 .trophy{font-size:20px;}
+/* DM SYSTEM */
+#dm-screen{padding:0 20px 100px;align-items:center;}
+.dm-layout{width:100%;max-width:800px;display:flex;gap:16px;margin-top:20px;height:calc(100vh - 160px);min-height:400px;}
+.dm-sidebar{width:240px;flex-shrink:0;background:linear-gradient(145deg,rgba(10,0,25,.92),rgba(0,4,18,.96));border:2px solid rgba(255,232,26,.2);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;}
+.dm-sidebar-title{font-family:var(--px);font-size:7px;color:var(--y);padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.06);letter-spacing:2px;}
+.dm-convo-list{flex:1;overflow-y:auto;}
+.dm-convo{display:flex;align-items:center;gap:10px;padding:12px 14px;cursor:pointer;transition:background .15s;border-bottom:1px solid rgba(255,255,255,.04);}
+.dm-convo:hover{background:rgba(255,232,26,.06);}
+.dm-convo.active{background:rgba(255,232,26,.1);}
+.dm-convo-avatar{width:36px;height:36px;border-radius:50%;border:1.5px solid rgba(255,232,26,.25);background:rgba(255,232,26,.08);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;overflow:hidden;}
+.dm-convo-avatar img{width:100%;height:100%;object-fit:cover;}
+.dm-convo-info{flex:1;min-width:0;}
+.dm-convo-name{font-family:var(--fr);font-size:13px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.dm-convo-preview{font-family:var(--vt);font-size:12px;color:rgba(255,255,255,.35);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:.5px;}
+.dm-convo-unread{width:8px;height:8px;background:var(--y);border-radius:50%;flex-shrink:0;}
+.dm-chat{flex:1;background:linear-gradient(145deg,rgba(10,0,25,.92),rgba(0,4,18,.96));border:2px solid rgba(255,232,26,.2);border-radius:14px;display:flex;flex-direction:column;overflow:hidden;}
+.dm-chat-header{padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.06);display:flex;align-items:center;gap:10px;}
+.dm-chat-name{font-family:var(--fr);font-size:16px;color:#fff;}
+.dm-messages{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px;}
+.dm-msg{max-width:75%;display:flex;flex-direction:column;}
+.dm-msg.sent{align-self:flex-end;align-items:flex-end;}
+.dm-msg.received{align-self:flex-start;align-items:flex-start;}
+.dm-msg-bubble{padding:10px 14px;border-radius:12px;font-family:var(--vt);font-size:16px;line-height:1.4;letter-spacing:.5px;}
+.dm-msg.sent .dm-msg-bubble{background:rgba(255,232,26,.2);color:#fff;border-bottom-right-radius:3px;}
+.dm-msg.received .dm-msg-bubble{background:rgba(255,255,255,.07);color:#fff;border-bottom-left-radius:3px;}
+.dm-msg-time{font-family:var(--vt);font-size:11px;color:rgba(255,255,255,.25);margin-top:3px;letter-spacing:.5px;}
+.dm-input-row{padding:12px 16px;border-top:1px solid rgba(255,255,255,.06);display:flex;gap:8px;}
+.dm-input{flex:1;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);color:#fff;padding:10px 14px;font-family:var(--vt);font-size:17px;outline:none;border-radius:8px;transition:border-color .2s;}
+.dm-input:focus{border-color:var(--y);}
+.dm-send{background:var(--y);color:#000;border:none;padding:10px 16px;font-family:var(--px);font-size:7px;border-radius:8px;cursor:pointer;transition:all .2s;white-space:nowrap;}
+.dm-send:hover{background:#fff;}
+.dm-empty{display:flex;align-items:center;justify-content:center;flex:1;font-family:var(--vt);font-size:18px;color:rgba(255,255,255,.2);letter-spacing:2px;text-align:center;padding:20px;}
+.dm-new-btn{padding:10px 14px;border-top:1px solid rgba(255,255,255,.06);}
+@media(max-width:600px){
+  .dm-layout{flex-direction:column;height:auto;}
+  .dm-sidebar{width:100%;height:200px;}
+  .dm-chat{height:400px;}
+}
 @media(max-width:600px){
   .fc-cover{width:80px;min-width:80px;height:80px;}
   .profile-header{flex-direction:column;align-items:center;text-align:center;}
@@ -394,6 +432,7 @@ select option{background:#0a0020;color:#fff;}
     <button class="nav-btn" onclick="showScreen('tournaments')">🏆 CUPS</button>
     <button class="nav-btn" onclick="showScreen('leaderboard')">RANKS</button>
     <button class="nav-btn" onclick="showScreen('search')">🔍</button>
+    <button class="nav-btn" id="dm-nav-btn" onclick="showScreen('dms')" style="position:relative;">💬<span id="dm-badge" style="display:none;position:absolute;top:-6px;right:-6px;background:var(--r);color:#fff;font-family:var(--px);font-size:6px;padding:2px 5px;border-radius:10px;min-width:16px;text-align:center;">0</span></button>
     <button class="nav-btn primary" onclick="showScreen('upload')">+ UPLOAD</button>
     <div id="notif-wrap" style="display:none;">
       <button id="notif-btn" onclick="toggleNotifDropdown()">
@@ -595,6 +634,7 @@ select option{background:#0a0020;color:#fff;}
   <div style="width:100%;max-width:700px;padding:0 4px;margin-top:16px;display:flex;gap:8px;">
     <button class="nav-btn" onclick="history.back();showScreen(prevScreen||'home')">← BACK</button>
     <button class="nav-btn primary" id="challenge-prod-btn" style="display:none;" onclick="challengeFromProfile()">⚔️ CHALLENGE</button>
+    <button class="nav-btn" id="dm-prod-btn" style="display:none;" onclick="dmProducer(viewingProducerId)">💬 MESSAGE</button>
   </div>
   <div class="profile-header" id="producer-header" style="margin-top:12px;"><div class="loading">LOADING...</div></div>
   <div style="width:100%;max-width:700px;margin-top:20px;">
@@ -648,6 +688,44 @@ select option{background:#0a0020;color:#fff;}
     <div class="modal-actions">
       <button class="m-btn m-btn-primary" onclick="confirmEnterTourney()">ENTER ⚔️</button>
       <button class="m-btn m-btn-cancel" onclick="closeModal('enter-tourney-modal')">CANCEL</button>
+    </div>
+  </div>
+</div>
+
+<!-- DM SCREEN -->
+<div id="dms-screen" class="screen">
+  <div class="dm-layout">
+    <div class="dm-sidebar">
+      <div class="dm-sidebar-title">💬 MESSAGES</div>
+      <div class="dm-convo-list" id="dm-convo-list"><div style="padding:16px;font-family:var(--vt);font-size:15px;color:rgba(255,255,255,.25);letter-spacing:1px;">NO MESSAGES YET</div></div>
+      <div class="dm-new-btn">
+        <button class="nav-btn primary" style="width:100%;font-size:6px;" onclick="openNewDM()">+ NEW MESSAGE</button>
+      </div>
+    </div>
+    <div class="dm-chat" id="dm-chat">
+      <div class="dm-empty">SELECT A CONVERSATION<br>OR START A NEW ONE</div>
+    </div>
+  </div>
+</div>
+
+<!-- NEW DM MODAL -->
+<div id="new-dm-modal" class="modal">
+  <div class="modal-box">
+    <div class="modal-title">💬 NEW MESSAGE</div>
+    <div class="field">
+      <label>SEND TO</label>
+      <select id="dm-recipient" style="width:100%;background:#0a0020;border:1px solid rgba(255,255,255,.15);color:#fff;padding:11px 14px;font-family:var(--vt);font-size:18px;outline:none;border-radius:7px;">
+        <option value="">loading producers...</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>MESSAGE</label>
+      <textarea id="dm-first-msg" placeholder="Yo, let's collab..." style="height:80px;"></textarea>
+    </div>
+    <div class="modal-msg" id="new-dm-msg"></div>
+    <div class="modal-actions">
+      <button class="m-btn m-btn-primary" onclick="sendFirstDM()">SEND 💬</button>
+      <button class="m-btn m-btn-cancel" onclick="closeModal('new-dm-modal')">CANCEL</button>
     </div>
   </div>
 </div>
@@ -801,6 +879,7 @@ async function loadProfile(){
   document.getElementById('nav-logout').style.display='';
   document.getElementById('notif-wrap').style.display='';
   loadNotifications();
+  loadDMBadge();
 }
 
 function updateNavAvatar(){
@@ -1150,6 +1229,7 @@ function showScreen(name){
   // producer screen loaded separately via viewProducer()
   if(name==='search'){ setTimeout(()=>document.getElementById('main-search').focus(),100); }
   if(name==='tournaments') loadTournaments();
+  if(name==='dms'){loadDMs();if(dmPollInterval)clearInterval(dmPollInterval);}
 }
 
 // ══════════════════════════════════════════
@@ -1479,7 +1559,13 @@ function timeAgo(dateStr){
 }
 
 // Poll for new notifications every 30 seconds
-setInterval(()=>{ if(currentUser) loadNotifications(); }, 30000);
+setInterval(()=>{ if(currentUser){loadNotifications();loadDMBadge();} }, 30000);
+
+async function loadDMBadge(){
+  if(!currentUser) return;
+  const {count} = await sb.from('messages').select('id',{count:'exact',head:true}).eq('receiver_id',currentUser.id).eq('read',false);
+  updateDMBadge(count||0);
+}
 
 // ══════════════════════════════════════════
 // COMMENTS
@@ -1566,8 +1652,9 @@ async function viewProducer(userId){
   showScreen('producer');
   // show challenge button if logged in and not own profile
   const challengeBtn = document.getElementById('challenge-prod-btn');
-  if(currentUser && userId !== currentUser.id) challengeBtn.style.display='';
-  else challengeBtn.style.display='none';
+  const dmBtn = document.getElementById('dm-prod-btn');
+  if(currentUser && userId !== currentUser.id){challengeBtn.style.display='';if(dmBtn)dmBtn.style.display='';}
+  else{challengeBtn.style.display='none';if(dmBtn)dmBtn.style.display='none';}
   // load profile
   const {data:p} = await sb.from('profiles').select('*').eq('id', userId).single();
   if(!p){ document.getElementById('producer-header').innerHTML='<div class="empty">PRODUCER NOT FOUND</div>'; return; }
@@ -2037,6 +2124,164 @@ function resetUploadForm(){
   document.getElementById('beat-file-name').style.display = 'none';
   document.getElementById('beat-file-name').textContent = '';
   document.getElementById('cover-preview').innerHTML = '🖼️';
+}
+
+// ══════════════════════════════════════════
+// DIRECT MESSAGES
+// ══════════════════════════════════════════
+let activeDMUserId = null;
+let dmPollInterval = null;
+
+async function loadDMs(){
+  if(!currentUser) return;
+  // get all unique conversations
+  const {data:msgs} = await sb.from('messages')
+    .select('*')
+    .or(`sender_id.eq.${currentUser.id},receiver_id.eq.${currentUser.id}`)
+    .order('created_at', {ascending:false});
+  if(!msgs||!msgs.length){
+    document.getElementById('dm-convo-list').innerHTML='<div style="padding:16px;font-family:var(--vt);font-size:15px;color:rgba(255,255,255,.25);letter-spacing:1px;">NO MESSAGES YET</div>';
+    updateDMBadge(0);
+    return;
+  }
+  // get unique conversation partners
+  const partnerIds = [...new Set(msgs.map(m=>m.sender_id===currentUser.id?m.receiver_id:m.sender_id))];
+  const {data:partners} = await sb.from('profiles').select('id,username,avatar_url').in('id',partnerIds);
+  const partnerMap = {};
+  if(partners) partners.forEach(p=>partnerMap[p.id]=p);
+  // build conversation list with last message
+  const convos = {};
+  msgs.forEach(m=>{
+    const partnerId = m.sender_id===currentUser.id?m.receiver_id:m.sender_id;
+    if(!convos[partnerId]) convos[partnerId]={lastMsg:m,unread:0};
+    if(!m.read&&m.receiver_id===currentUser.id) convos[partnerId].unread++;
+  });
+  const list = document.getElementById('dm-convo-list');
+  const totalUnread = Object.values(convos).reduce((a,b)=>a+b.unread,0);
+  updateDMBadge(totalUnread);
+  list.innerHTML = Object.entries(convos).map(([pid,data])=>{
+    const p = partnerMap[pid]||{username:'Producer'};
+    const avatarHtml = p.avatar_url?`<img src="${esc(p.avatar_url)}">`:'👤';
+    const preview = (data.lastMsg.sender_id===currentUser.id?'You: ':'')+data.lastMsg.content;
+    return `
+    <div class="dm-convo ${activeDMUserId===pid?'active':''}" onclick="openDMChat('${pid}')">
+      <div class="dm-convo-avatar">${avatarHtml}</div>
+      <div class="dm-convo-info">
+        <div class="dm-convo-name">${esc(p.username)}</div>
+        <div class="dm-convo-preview">${esc(preview.substring(0,30))}${preview.length>30?'...':''}</div>
+      </div>
+      ${data.unread>0?'<div class="dm-convo-unread"></div>':''}
+    </div>`;
+  }).join('');
+}
+
+function updateDMBadge(count){
+  const badge = document.getElementById('dm-badge');
+  if(!badge) return;
+  badge.textContent = count;
+  badge.style.display = count>0?'block':'none';
+}
+
+async function openDMChat(userId){
+  activeDMUserId = userId;
+  const chat = document.getElementById('dm-chat');
+  // mark as active in sidebar
+  document.querySelectorAll('.dm-convo').forEach(el=>el.classList.remove('active'));
+  document.querySelector(`.dm-convo[onclick="openDMChat('${userId}')"]`)?.classList.add('active');
+  // load profile
+  const {data:partner} = await sb.from('profiles').select('*').eq('id',userId).single();
+  if(!partner) return;
+  const avatarHtml = partner.avatar_url?`<img src="${esc(partner.avatar_url)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`:'👤';
+  chat.innerHTML=`
+    <div class="dm-chat-header">
+      <div class="dm-convo-avatar" style="width:36px;height:36px;border-radius:50%;border:1.5px solid rgba(255,232,26,.25);background:rgba(255,232,26,.08);display:flex;align-items:center;justify-content:center;font-size:16px;overflow:hidden;">${avatarHtml}</div>
+      <div class="dm-chat-name">${esc(partner.username)}</div>
+      <button class="nav-btn" style="margin-left:auto;font-size:6px;" onclick="viewProducer('${userId}')">VIEW PROFILE</button>
+    </div>
+    <div class="dm-messages" id="dm-messages-${userId}"><div class="loading">LOADING...</div></div>
+    <div class="dm-input-row">
+      <input type="text" class="dm-input" id="dm-msg-input" placeholder="TYPE A MESSAGE..." onkeydown="if(event.key==='Enter')sendDM('${userId}')">
+      <button class="dm-send" onclick="sendDM('${userId}')">SEND</button>
+    </div>`;
+  await loadChatMessages(userId);
+  // mark messages as read
+  await sb.from('messages').update({read:true}).eq('sender_id',userId).eq('receiver_id',currentUser.id);
+  loadDMs();
+  // start polling for new messages
+  if(dmPollInterval) clearInterval(dmPollInterval);
+  dmPollInterval = setInterval(()=>loadChatMessages(userId), 5000);
+}
+
+async function loadChatMessages(userId){
+  const container = document.getElementById('dm-messages-'+userId);
+  if(!container) return;
+  const {data:msgs} = await sb.from('messages')
+    .select('*')
+    .or(`and(sender_id.eq.${currentUser.id},receiver_id.eq.${userId}),and(sender_id.eq.${userId},receiver_id.eq.${currentUser.id})`)
+    .order('created_at', {ascending:true});
+  if(!msgs||!msgs.length){
+    container.innerHTML='<div class="dm-empty">NO MESSAGES YET — SAY HI!</div>';
+    return;
+  }
+  const wasAtBottom = container.scrollHeight-container.scrollTop-container.clientHeight < 50;
+  container.innerHTML = msgs.map(m=>{
+    const isSent = m.sender_id===currentUser.id;
+    return `
+    <div class="dm-msg ${isSent?'sent':'received'}">
+      <div class="dm-msg-bubble">${esc(m.content)}</div>
+      <div class="dm-msg-time">${timeAgo(m.created_at)}</div>
+    </div>`;
+  }).join('');
+  // scroll to bottom
+  if(wasAtBottom || msgs.length<10) container.scrollTop = container.scrollHeight;
+}
+
+async function sendDM(userId){
+  const input = document.getElementById('dm-msg-input');
+  const content = input?.value.trim();
+  if(!content||!currentUser) return;
+  input.value='';
+  const {error} = await sb.from('messages').insert({
+    sender_id: currentUser.id,
+    receiver_id: userId,
+    content
+  });
+  if(error){showToast('ERROR SENDING MESSAGE');return;}
+  await loadChatMessages(userId);
+  // notify recipient
+  await createNotification(userId,'dm',`💬 ${currentProfile.username} sent you a message`,'dms');
+  loadDMs();
+}
+
+async function openNewDM(){
+  if(!currentUser){showToast('LOGIN FIRST');return;}
+  const {data:prods} = await sb.from('profiles').select('id,username').neq('id',currentUser.id).order('username');
+  const sel = document.getElementById('dm-recipient');
+  if(!prods||!prods.length){sel.innerHTML='<option value="">No other producers yet</option>';}
+  else sel.innerHTML = prods.map(p=>`<option value="${p.id}">${esc(p.username)}</option>`).join('');
+  document.getElementById('new-dm-msg').textContent='';
+  document.getElementById('dm-first-msg').value='';
+  openModal('new-dm-modal');
+}
+
+async function sendFirstDM(){
+  const userId = document.getElementById('dm-recipient').value;
+  const content = document.getElementById('dm-first-msg').value.trim();
+  const msg = document.getElementById('new-dm-msg');
+  if(!userId){msg.textContent='PICK SOMEONE';msg.style.color='var(--r)';return;}
+  if(!content){msg.textContent='TYPE A MESSAGE';msg.style.color='var(--r)';return;}
+  msg.textContent='SENDING...';msg.style.color='var(--y)';
+  const {error} = await sb.from('messages').insert({sender_id:currentUser.id,receiver_id:userId,content});
+  if(error){msg.textContent='ERROR: '+error.message;msg.style.color='var(--r)';return;}
+  await createNotification(userId,'dm',`💬 ${currentProfile.username} sent you a message`,'dms');
+  msg.textContent='SENT!';msg.style.color='var(--g)';
+  setTimeout(()=>{closeModal('new-dm-modal');openDMChat(userId);loadDMs();},800);
+}
+
+// add DM button to producer profile
+function dmProducer(userId){
+  showScreen('dms');
+  setTimeout(()=>openDMChat(userId),300);
 }
 
 // drag drop upload
